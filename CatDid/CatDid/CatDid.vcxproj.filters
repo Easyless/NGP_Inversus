@@ -1,0 +1,196 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="헤더 파일">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="리소스 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="헤더 파일\Framework">
+      <UniqueIdentifier>{8772da4a-c888-4c5f-87a7-6087a5f69986}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Utill">
+      <UniqueIdentifier>{1dca69a1-896b-49c9-93da-b6b7bbf450be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Utill">
+      <UniqueIdentifier>{673ae323-707e-4f53-8b4b-d58b94fa9d49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Framework\Draw">
+      <UniqueIdentifier>{0310c4bf-474f-451d-a1c2-488c803d6ae6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Inversus">
+      <UniqueIdentifier>{fadabe03-7898-4ddd-a913-9c3b53be745f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Inversus">
+      <UniqueIdentifier>{e3fee2f5-5a77-425e-90a5-ce85c5c9ae07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Windows">
+      <UniqueIdentifier>{f593d069-d6a7-485c-9bba-bc6b335e5fae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Inversus\Object">
+      <UniqueIdentifier>{6a72aed4-8fb3-485c-991d-7fa450a8b171}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Sever-Communication">
+      <UniqueIdentifier>{87902195-84c6-4c38-b419-5f609d3aa9bb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="CatDid.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Vec2D.h">
+      <Filter>헤더 파일\Utill</Filter>
+    </ClInclude>
+    <ClInclude Include="Rect.h">
+      <Filter>헤더 파일\Utill</Filter>
+    </ClInclude>
+    <ClInclude Include="CatFrameWork.h">
+      <Filter>헤더 파일\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>헤더 파일\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="PaintInfo.h">
+      <Filter>헤더 파일\Framework\Draw</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>헤더 파일\Utill</Filter>
+    </ClInclude>
+    <ClInclude Include="InversusClasses.h">
+      <Filter>헤더 파일\Inversus</Filter>
+    </ClInclude>
+    <ClInclude Include="InversusFramework.h">
+      <Filter>헤더 파일\Inversus</Filter>
+    </ClInclude>
+    <ClInclude Include="InversusConst.h">
+      <Filter>헤더 파일\Inversus</Filter>
+    </ClInclude>
+    <ClInclude Include="UtillFunction.h">
+      <Filter>헤더 파일\Utill</Filter>
+    </ClInclude>
+    <ClInclude Include="IFrameworkObject.h">
+      <Filter>헤더 파일\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="InversusEnum.h">
+      <Filter>헤더 파일\Inversus</Filter>
+    </ClInclude>
+    <ClInclude Include="Bullet.h">
+      <Filter>헤더 파일\Inversus\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Enemy.h">
+      <Filter>헤더 파일\Inversus\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Explosion.h">
+      <Filter>헤더 파일\Inversus\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Map.h">
+      <Filter>헤더 파일\Inversus\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>헤더 파일\Inversus\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="DropBullet.h">
+      <Filter>헤더 파일\Inversus\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="UIObject.h">
+      <Filter>헤더 파일\Inversus\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="InversusMenu.h">
+      <Filter>헤더 파일\Inversus</Filter>
+    </ClInclude>
+    <ClInclude Include="Difficulty.h">
+      <Filter>헤더 파일\Inversus</Filter>
+    </ClInclude>
+    <ClInclude Include="LowLevelData.h">
+      <Filter>헤더 파일\Sever-Communication</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="CatDid.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Vec2D.cpp">
+      <Filter>소스 파일\Utill</Filter>
+    </ClCompile>
+    <ClCompile Include="Bullet.cpp">
+      <Filter>소스 파일\Inversus</Filter>
+    </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>소스 파일\Inversus</Filter>
+    </ClCompile>
+    <ClCompile Include="Map.cpp">
+      <Filter>소스 파일\Inversus</Filter>
+    </ClCompile>
+    <ClCompile Include="wMain.cpp">
+      <Filter>소스 파일\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="InversusFramework.cpp">
+      <Filter>소스 파일\Inversus</Filter>
+    </ClCompile>
+    <ClCompile Include="Enemy.cpp">
+      <Filter>소스 파일\Inversus</Filter>
+    </ClCompile>
+    <ClCompile Include="InversusContainer.cpp">
+      <Filter>소스 파일\Inversus</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="InversusClasses.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Explosion.cpp">
+      <Filter>소스 파일\Inversus</Filter>
+    </ClCompile>
+    <ClCompile Include="DropBullet.cpp">
+      <Filter>소스 파일\Inversus</Filter>
+    </ClCompile>
+    <ClCompile Include="InversusController.cpp">
+      <Filter>소스 파일\Inversus</Filter>
+    </ClCompile>
+    <ClCompile Include="UtillFunction.cpp">
+      <Filter>소스 파일\Utill</Filter>
+    </ClCompile>
+    <ClCompile Include="UIObject.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="InversusMenu.cpp">
+      <Filter>소스 파일\Inversus</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="CatDid.rc">
+      <Filter>리소스 파일</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="small.ico">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="CatDid.ico">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="InversusResource\help.bmp">
+      <Filter>리소스 파일</Filter>
+    </Image>
+  </ItemGroup>
+</Project>
