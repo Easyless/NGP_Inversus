@@ -31,7 +31,7 @@ PlayerInput p[MAX_PLAYER_LENGTH];
 int connectedCount = 0;
 
 // nextMessage 모든 스레드에서 한번씩 보낸 뒤 바꾸기 - 동기화
-unsigned char nextMessage = MSG_MESSAGE_NULL;
+unsigned char nextMessage = MSG_WAIT_ROOM_DATA;
 
 // 소켓 함수 오류 출력 후 종료
 void err_quit(const char* msg)
@@ -93,7 +93,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	int addrlen;
 
 	NetGameMessage receivemessage;
-	NetGameMessage sendmessage;
+	NetGameMessage sendmessage = { MSG_WAIT_ROOM_DATA, GetMessageParameterSize(MSG_WAIT_ROOM_DATA) };
 
 	int readyCount;
 
@@ -115,16 +115,21 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 		addrlen = sizeof(clientaddr);
 		getpeername(client_sock, (SOCKADDR*)&clientaddr, &addrlen);
 
+		sendmessage.type = (NetGameMessageType)nextMessage;
+		sendmessage.parameterSize = GetMessageParameterSize((NetGameMessageType)nextMessage);
+
 		// 데이터 송신 - 메세지 타입 및 사이즈
 		retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
 		if (retval == SOCKET_ERROR) err_quit("send(), message");
 
+		std::cout << "sendmessage type: " << sendmessage.type << std::endl;
+
 		// 데이터 송신 - 메세지에 해당하는 데이터 송신
-		switch (nextMessage) {
+		switch (sendmessage.type) {
 		case MSG_WAIT_ROOM_DATA:
-			sendmessage.type = MSG_WAIT_ROOM_DATA;
 			retval = send(client_sock, (char*)&waitRoomData, sizeof(WaitRoomData), 0);
 			if (retval == SOCKET_ERROR) err_quit("send(), message");
+			std::cout << "send roomdata" << std::endl;
 			break;
 		case MSG_GAME_START:
 			sendmessage.type = MSG_GAME_START;
@@ -145,11 +150,20 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 
 		// 데이터 수신 - 메세지 타입 및 사이즈
 		retval = recvn(client_sock, (char*)&receivemessage, sizeof(NetGameMessage), 0);
-		if (retval == SOCKET_ERROR) err_quit("recvn(), message");
+		if (retval == SOCKET_ERROR) {
+			err_display("recvn, ready message");
+			isConnect[threadnum] = false;
+			connectedCount--;
+			closesocket(client_sock);
+			std::cout << "end communication thread" << std::endl;
+			return 0;
+		}
+
+		std::cout << "recvmessage type: " << receivemessage.type << std::endl;
 
 		UINT datasize = GetMessageParameterSize(receivemessage.type);
 
-		EnterCriticalSection(&cs);
+		//EnterCriticalSection(&cs);
 		// 데이터 수신 - 메세지 정보에 따른 후속 정보
 		switch (receivemessage.type)
 		{
@@ -157,9 +171,16 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			// 메시지 수신 시 다음 메시지 정보 전송(대기 방 갱신)
 		case MSG_REQ_READY:
 			retval = recvn(client_sock, (char*)&receivemessage, datasize, 0);
-			if (retval == SOCKET_ERROR) err_quit("recvn, ready message");
+			if (retval == SOCKET_ERROR) {
+				err_display("recvn, ready message");
+				isConnect[threadnum] = false;
+				connectedCount--;
+				closesocket(client_sock);
+				std::cout << "end communication thread" << std::endl;
+				return 0;
+			}
 			waitRoomData.playerWaitStates[threadnum] = WIAT_READY;
-
+			std::cout << "recv ready msg" << std::endl;
 			readyCount = 0;
 			for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 			{
@@ -177,8 +198,17 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 
 		case MSG_CANCLE_READY:
 			retval = recvn(client_sock, (char*)&receivemessage, datasize, 0);
-			if (retval == SOCKET_ERROR) err_quit("recvn, cancle ready message");
+			if (retval == SOCKET_ERROR) {
+				err_display("recvn, ready message");
+				isConnect[threadnum] = false;
+				connectedCount--;
+				closesocket(client_sock);
+				std::cout << "end communication thread" << std::endl;
+				return 0;
+			}
 			// 레디 취소 처리
+			std::cout << "recv ready cancle msg" << std::endl;
+			readyCount--;
 			waitRoomData.playerWaitStates[threadnum] = WAIT_CONNECTED_NORMAL;
 			nextMessage = MSG_WAIT_ROOM_DATA;
 			break;
@@ -195,15 +225,15 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			nextMessage = MSG_MESSAGE_NULL; // 다음 메시지 NULL
 			break;
 		}
-		LeaveCriticalSection(&cs);
-		break;
+		//LeaveCriticalSection(&cs);
 	}
-
-	closesocket(client_sock);
 
 	isConnect[threadnum] = false;
 	connectedCount--;
 
+	closesocket(client_sock);
+
+	std::cout << "end communication thread"<<std::endl;
 	return 0;
 }
 
@@ -220,10 +250,10 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 		//		if (p[i].isPressedMoveRight) { gameSceneData.playerState[i].positionX += 1; }
 		//	}
 		//}
-
 		// 몹 관련
-
 		// 총알 관련
+		//std::cout << "update" << std::endl;
+		Sleep(1000);
 	}
 
 	return 0;
@@ -295,12 +325,16 @@ int main(int argc, char* argv[]) {
 				break;
 			}
 		}
-
+		for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
+		{
+			std::cout << isConnect[i] << " ";
+		}
+		std::cout << std::endl;
 		// 클라이언트 소켓으로 CommunicationThread 생성
 		if (success) {
 			arg = { client_sock, threadnum };
 			hThread = CreateThread(NULL, 0, CommunicationThreadFunc,
-				(LPVOID)&p, 0, NULL);
+				(LPVOID)&arg, 0, NULL);
 			if (hThread == NULL) { closesocket(client_sock); }
 			else {
 				CloseHandle(hThread);
