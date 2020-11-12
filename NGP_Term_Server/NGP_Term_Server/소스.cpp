@@ -20,7 +20,7 @@ CRITICAL_SECTION cs;
 
 // 연결 최대 4개
 bool isConnect[MAX_PLAYER_LENGTH] = { false, false, false, false };
-
+SOCKET connectedSocket[4] = { NULL, NULL, NULL, NULL };
 // 전역 데이터
 WaitRoomData waitRoomData;
 GameSceneData gameSceneData;
@@ -80,6 +80,37 @@ int recvn(SOCKET s, char* buf, int len, int flags)
 }
 
 
+void SendtoAll(NetGameMessage sendmessage) {
+	for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
+	{
+		if (isConnect[i]) {
+			send(connectedSocket[i], (char*)&sendmessage, sizeof(NetGameMessage), 0);
+
+			switch (sendmessage.type) {
+			case MSG_WAIT_ROOM_DATA:
+				send(connectedSocket[i], (char*)&waitRoomData, sizeof(WaitRoomData), 0);
+				std::cout << "sendtoall waitroomdata" << std::endl;
+				break;
+			case MSG_GAME_START:
+				sendmessage.type = MSG_GAME_START;
+				break;
+			case MSG_SCENE_DATA:
+				sendmessage.type = MSG_SCENE_DATA;
+				break;
+			case MSG_BULLET_DATA:
+				sendmessage.type = MSG_BULLET_DATA;
+				break;
+			case MSG_MOB_DATA:
+				sendmessage.type = MSG_MOB_DATA;
+				break;
+			default:
+				sendmessage.type = MSG_MESSAGE_NULL;
+				break;
+			}
+		}
+	}
+}
+
 
 DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	int retval;
@@ -95,7 +126,9 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	NetGameMessage receivemessage;
 	NetGameMessage sendmessage = { MSG_WAIT_ROOM_DATA, GetMessageParameterSize(MSG_WAIT_ROOM_DATA) };
 
-	int readyCount;
+	SendtoAll(sendmessage);
+
+	int readyCount = 0;
 
 	// 메시지 종류
 	// MSG_MESSAGE_NULL - 메시지 전송 필요 없을 시(ex 대기 방 요청x or  로딩 시)
@@ -110,6 +143,9 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	// MSG_BULLET_DATA
 	// MSG_MOB_DATA
 	
+	// 소켓 전역변수, 메시지 받았을 때 다른 소켓에도 전송?
+
+	// 
 	while (true) {
 		// 클라이언트 정보 얻기
 		addrlen = sizeof(clientaddr);
@@ -194,6 +230,9 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			else {
 				nextMessage = MSG_WAIT_ROOM_DATA;
 			}
+			sendmessage.type = (NetGameMessageType)nextMessage;
+			sendmessage.parameterSize = GetMessageParameterSize((NetGameMessageType)nextMessage);
+			SendtoAll(sendmessage);
 			break;
 
 		case MSG_CANCLE_READY:
@@ -211,6 +250,10 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			readyCount--;
 			waitRoomData.playerWaitStates[threadnum] = WAIT_CONNECTED_NORMAL;
 			nextMessage = MSG_WAIT_ROOM_DATA;
+
+			sendmessage.type = (NetGameMessageType)nextMessage;
+			sendmessage.parameterSize = GetMessageParameterSize((NetGameMessageType)nextMessage);
+			SendtoAll(sendmessage);
 			break;
 
 		//	// 게임 씬 수신 가능 메시지
@@ -221,8 +264,8 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 		//	break;
 
 		default:
-			// 대기방: NULL, 게임 플레이: MSG_SCENE_DATA
-			nextMessage = MSG_MESSAGE_NULL; // 다음 메시지 NULL
+			// 대기방: MSG_WAIT_ROOM_DATA, 게임 플레이: MSG_SCENE_DATA
+			nextMessage = MSG_WAIT_ROOM_DATA; 
 			break;
 		}
 		//LeaveCriticalSection(&cs);
@@ -258,7 +301,6 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 	return 0;
 }
-
 
 int main(int argc, char* argv[]) {
 
@@ -320,6 +362,7 @@ int main(int argc, char* argv[]) {
 			if (!isConnect[i]) {
 				threadnum = i;
 				isConnect[i] = true;
+				waitRoomData.playerWaitStates[i] = WAIT_CONNECTED_NORMAL;
 				connectedCount++;
 				success = true;
 				break;
@@ -333,6 +376,7 @@ int main(int argc, char* argv[]) {
 		// 클라이언트 소켓으로 CommunicationThread 생성
 		if (success) {
 			arg = { client_sock, threadnum };
+			connectedSocket[threadnum] = client_sock;
 			hThread = CreateThread(NULL, 0, CommunicationThreadFunc,
 				(LPVOID)&arg, 0, NULL);
 			if (hThread == NULL) { closesocket(client_sock); }
