@@ -18,10 +18,10 @@ CRITICAL_SECTION cs;
 // 이벤트로 스레드 동기화
 // 대기방에서는 업데이트 x?
 
+// 전역 데이터
 // 연결 최대 4개
 bool isConnect[MAX_PLAYER_LENGTH] = { false, false, false, false };
 SOCKET connectedSocket[4] = { NULL, NULL, NULL, NULL };
-// 전역 데이터
 WaitRoomData waitRoomData;
 GameSceneData gameSceneData;
 BulletData bulletData;
@@ -30,8 +30,6 @@ EventParameter e;
 PlayerInput p[MAX_PLAYER_LENGTH];
 int connectedCount = 0;
 
-// nextMessage 모든 스레드에서 한번씩 보낸 뒤 바꾸기 - 동기화
-unsigned char nextMessage = MSG_WAIT_ROOM_DATA;
 
 // 소켓 함수 오류 출력 후 종료
 void err_quit(const char* msg)
@@ -91,20 +89,7 @@ void SendtoAll(NetGameMessage sendmessage) {
 				send(connectedSocket[i], (char*)&waitRoomData, sizeof(WaitRoomData), 0);
 				std::cout << "sendtoall waitroomdata" << std::endl;
 				break;
-			case MSG_GAME_START:
-				sendmessage.type = MSG_GAME_START;
-				break;
-			case MSG_SCENE_DATA:
-				sendmessage.type = MSG_SCENE_DATA;
-				break;
-			case MSG_BULLET_DATA:
-				sendmessage.type = MSG_BULLET_DATA;
-				break;
-			case MSG_MOB_DATA:
-				sendmessage.type = MSG_MOB_DATA;
-				break;
 			default:
-				sendmessage.type = MSG_MESSAGE_NULL;
 				break;
 			}
 		}
@@ -143,16 +128,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	// MSG_BULLET_DATA
 	// MSG_MOB_DATA
 	
-	// 소켓 전역변수, 메시지 받았을 때 다른 소켓에도 전송?
-
-	// 
 	while (true) {
-		// 클라이언트 정보 얻기
-		addrlen = sizeof(clientaddr);
-		getpeername(client_sock, (SOCKADDR*)&clientaddr, &addrlen);
-
-		sendmessage.type = (NetGameMessageType)nextMessage;
-		sendmessage.parameterSize = GetMessageParameterSize((NetGameMessageType)nextMessage);
 
 		// 데이터 송신 - 메세지 타입 및 사이즈
 		retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
@@ -168,19 +144,14 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			std::cout << "send roomdata" << std::endl;
 			break;
 		case MSG_GAME_START:
-			sendmessage.type = MSG_GAME_START;
 			break;
 		case MSG_SCENE_DATA:
-			sendmessage.type = MSG_SCENE_DATA;
 			break;
 		case MSG_BULLET_DATA:
-			sendmessage.type = MSG_BULLET_DATA;
 			break;
 		case MSG_MOB_DATA:
-			sendmessage.type = MSG_MOB_DATA;
 			break;
 		default:
-			sendmessage.type = MSG_MESSAGE_NULL;
 			break;
 		}
 
@@ -190,6 +161,9 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			err_display("recvn, ready message");
 			isConnect[threadnum] = false;
 			connectedCount--;
+			waitRoomData.playerWaitStates[threadnum] = WAIT_NOT_CONNECTED;
+			sendmessage.type = MSG_WAIT_ROOM_DATA;
+			sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
 			closesocket(client_sock);
 			std::cout << "end communication thread" << std::endl;
 			return 0;
@@ -211,27 +185,30 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				err_display("recvn, ready message");
 				isConnect[threadnum] = false;
 				connectedCount--;
+				waitRoomData.playerWaitStates[threadnum] = WAIT_NOT_CONNECTED;
+				sendmessage.type = MSG_WAIT_ROOM_DATA;
+				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
+				SendtoAll(sendmessage);
 				closesocket(client_sock);
 				std::cout << "end communication thread" << std::endl;
 				return 0;
 			}
-			waitRoomData.playerWaitStates[threadnum] = WIAT_READY;
+			waitRoomData.playerWaitStates[threadnum] = WAIT_READY;
 			std::cout << "recv ready msg" << std::endl;
 			readyCount = 0;
 			for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 			{
-				if (waitRoomData.playerWaitStates[i] == WIAT_READY) {
+				if (waitRoomData.playerWaitStates[i] == WAIT_READY) {
 					readyCount++;
 				}
 			}
 			if (readyCount == connectedCount) {
-				nextMessage = MSG_GAME_ALL_READY;
+				sendmessage.type = MSG_GAME_ALL_READY;
 			}
 			else {
-				nextMessage = MSG_WAIT_ROOM_DATA;
+				sendmessage.type = MSG_WAIT_ROOM_DATA;
 			}
-			sendmessage.type = (NetGameMessageType)nextMessage;
-			sendmessage.parameterSize = GetMessageParameterSize((NetGameMessageType)nextMessage);
+			sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
 			SendtoAll(sendmessage);
 			break;
 
@@ -240,8 +217,11 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			if (retval == SOCKET_ERROR) {
 				err_display("recvn, ready message");
 				isConnect[threadnum] = false;
-				connectedCount--;
-				closesocket(client_sock);
+				connectedCount--; 
+				waitRoomData.playerWaitStates[threadnum] = WAIT_NOT_CONNECTED;
+				sendmessage.type = MSG_WAIT_ROOM_DATA;
+				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
+				SendtoAll(sendmessage);
 				std::cout << "end communication thread" << std::endl;
 				return 0;
 			}
@@ -249,10 +229,8 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			std::cout << "recv ready cancle msg" << std::endl;
 			readyCount--;
 			waitRoomData.playerWaitStates[threadnum] = WAIT_CONNECTED_NORMAL;
-			nextMessage = MSG_WAIT_ROOM_DATA;
-
-			sendmessage.type = (NetGameMessageType)nextMessage;
-			sendmessage.parameterSize = GetMessageParameterSize((NetGameMessageType)nextMessage);
+			sendmessage.type = MSG_WAIT_ROOM_DATA;
+			sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
 			SendtoAll(sendmessage);
 			break;
 
@@ -264,8 +242,6 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 		//	break;
 
 		default:
-			// 대기방: MSG_WAIT_ROOM_DATA, 게임 플레이: MSG_SCENE_DATA
-			nextMessage = MSG_WAIT_ROOM_DATA; 
 			break;
 		}
 		//LeaveCriticalSection(&cs);
@@ -273,7 +249,9 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 
 	isConnect[threadnum] = false;
 	connectedCount--;
-
+	waitRoomData.playerWaitStates[threadnum] = WAIT_NOT_CONNECTED;
+	sendmessage.type = MSG_WAIT_ROOM_DATA;
+	sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
 	closesocket(client_sock);
 
 	std::cout << "end communication thread"<<std::endl;
