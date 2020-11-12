@@ -42,7 +42,7 @@ enum PlayerWaitState : unsigned char
 {
 	WAIT_NOT_CONNECTED = 0,
 	WAIT_CONNECTED_NORMAL = 1,
-	WIAT_READY = 2
+	WAIT_READY = 2
 };
 
 struct WaitRoomData // 대기방 정보를 나타내는 구조체
