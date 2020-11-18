@@ -164,6 +164,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			waitRoomData.playerWaitStates[threadnum] = WAIT_NOT_CONNECTED;
 			sendmessage.type = MSG_WAIT_ROOM_DATA;
 			sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
+			SendtoAll(sendmessage);
 			closesocket(client_sock);
 			std::cout << "end communication thread" << std::endl;
 			return 0;
@@ -214,7 +215,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 
 		case MSG_CANCLE_READY:
 			retval = recvn(client_sock, (char*)&receivemessage, datasize, 0);
-			if (retval == SOCKET_ERROR) {
+			if (retval == SOCKET_ERROR || 0) {
 				err_display("recvn, ready message");
 				isConnect[threadnum] = false;
 				connectedCount--; 
@@ -247,13 +248,15 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 		//LeaveCriticalSection(&cs);
 	}
 
+	
 	isConnect[threadnum] = false;
 	connectedCount--;
 	waitRoomData.playerWaitStates[threadnum] = WAIT_NOT_CONNECTED;
 	sendmessage.type = MSG_WAIT_ROOM_DATA;
 	sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
-	closesocket(client_sock);
+	SendtoAll(sendmessage);
 
+	closesocket(client_sock);
 	std::cout << "end communication thread"<<std::endl;
 	return 0;
 }
