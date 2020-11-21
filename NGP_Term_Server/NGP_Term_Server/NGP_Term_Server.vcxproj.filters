@@ -23,5 +23,8 @@
     <ClInclude Include="LowLevel_Data.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="LowLevelData.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
