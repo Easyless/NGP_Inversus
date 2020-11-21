@@ -249,7 +249,7 @@ int ClientSocketManager::Recvn( SOCKET socket, char* buf, int len, int flags )
 void ClientSocketManager::OnRecvWaitData()
 {
 	this->variables.roomData.Use();
-	if ( this->variables.roomData.isChange = true )
+	if ( this->variables.roomData.isChange == true )
 	{
 		this->variables.roomData.isChange = false;
 		this->recvWaitDataFunction( this->variables.roomData.data );
@@ -260,7 +260,7 @@ void ClientSocketManager::OnRecvWaitData()
 void ClientSocketManager::OnRecvAllReady()
 {
 	this->variables.recvAllReady.Use();
-	if ( this->variables.recvAllReady.isChange = true )
+	if ( this->variables.recvAllReady.isChange == true )
 	{
 		this->variables.recvAllReady.isChange = false;
 		this->variables.recvAllReady.data = false;
@@ -272,7 +272,7 @@ void ClientSocketManager::OnRecvAllReady()
 void ClientSocketManager::OnRecvGameStart()
 {
 	this->variables.recvGameStart.Use();
-	if ( this->variables.recvGameStart.isChange = true )
+	if ( this->variables.recvGameStart.isChange == true )
 	{
 		this->variables.recvGameStart.isChange = false;
 		this->recvGameStartFunction();
@@ -283,7 +283,7 @@ void ClientSocketManager::OnRecvGameStart()
 void ClientSocketManager::OnRecvSceneData()
 {
 	this->variables.sceneData.Use();
-	if ( this->variables.sceneData.isChange = true )
+	if ( this->variables.sceneData.isChange == true )
 	{
 		this->variables.sceneData.isChange = false;
 		this->recvSceneDataFunction( this->variables.sceneData.data );
@@ -294,7 +294,7 @@ void ClientSocketManager::OnRecvSceneData()
 void ClientSocketManager::OnRecvBulletData()
 {
 	this->variables.bulletData.Use();
-	if ( this->variables.bulletData.isChange = true )
+	if ( this->variables.bulletData.isChange == true )
 	{
 		this->variables.bulletData.isChange = false;
 		this->recvBulletDataFunction( this->variables.bulletData.data );
@@ -305,7 +305,7 @@ void ClientSocketManager::OnRecvBulletData()
 void ClientSocketManager::OnRecvMobData()
 {
 	this->variables.mobData.Use();
-	if ( this->variables.mobData.isChange = true )
+	if ( this->variables.mobData.isChange == true )
 	{
 		this->variables.mobData.isChange = false;
 		this->recvMobDataFunction( this->variables.mobData.data );
@@ -316,7 +316,7 @@ void ClientSocketManager::OnRecvMobData()
 void ClientSocketManager::OnRecvGameEnd()
 {
 	this->variables.recvGameEnd.Use();
-	if ( this->variables.recvGameEnd.isChange = true )
+	if ( this->variables.recvGameEnd.isChange == true )
 	{
 		this->variables.recvGameEnd.isChange = false;
 		this->variables.recvGameEnd.data = false;
@@ -328,7 +328,7 @@ void ClientSocketManager::OnRecvGameEnd()
 void ClientSocketManager::OnRecvEventExplosion()
 {
 	this->variables.expData.Use();
-	if ( this->variables.expData.isChange = true )
+	if ( this->variables.expData.isChange == true )
 	{
 		this->variables.expData.isChange = false;
 		this->recvEventExplosionFunction( this->variables.spawnData.data );
@@ -339,7 +339,7 @@ void ClientSocketManager::OnRecvEventExplosion()
 void ClientSocketManager::OnRecvEventSpawn()
 {
 	this->variables.spawnData.Use();
-	if ( this->variables.spawnData.isChange = true )
+	if ( this->variables.spawnData.isChange == true )
 	{
 		this->variables.spawnData.isChange = false;
 		this->recvEventSpawnFunction( this->variables.spawnData.data );

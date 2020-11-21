@@ -102,6 +102,15 @@ InversusMenu::InversusMenu(InversusFramework* framework)
 		}
 	};
 
+	ClientSocketManager::GetInstance()->recvAllReadyFunction =
+		[this]( )
+	{
+		this->Deactive(); 
+		this->framework->controller->Reset( Difficulty::Normal );
+		this->framework->Start();
+	};
+
+
 	////난이도 조절
 	//i = 0;
 	//but.Position = { 750, 500 + 75.f * i };
@@ -271,7 +280,7 @@ void InversusMenu::Draw(PaintInfo info)
 					case PlayerWaitState::WAIT_NOT_CONNECTED:
 						statusText = L"EMPTY";
 						break;
-					case PlayerWaitState::WIAT_READY:
+					case PlayerWaitState::WAIT_READY:
 						statusText = L"READY";
 						break;
 					}
@@ -365,6 +374,7 @@ void InversusMenu::Update(float deltaTime)
 	if (this->isActive)
 	{
 		ClientSocketManager::GetInstance()->OnRecvWaitData();
+		ClientSocketManager::GetInstance()->OnRecvAllReady();
 		this->rotate += deltaTime * rotateSpeed;
 		if (ClickDelay > 0)
 		{
@@ -380,11 +390,8 @@ void InversusMenu::Update(float deltaTime)
 			if (this->Position.x + this->Size.x  < 0)
 			{
 				this->buttons[0].isActive = true;
-				this->buttons[1].isActive = true;
+				this->buttons[1].isActive = false;
 				this->buttons[2].isActive = true;
-				this->buttons[3].isActive = false;
-				this->buttons[4].isActive = false;
-				this->buttons[5].isActive = false;
 				isBacking = false;
 				isReing = true;
 				isActive = false;
