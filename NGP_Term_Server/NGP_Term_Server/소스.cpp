@@ -1,12 +1,15 @@
-#define _WINSOCK_DEPRECATED_NO_WARNINGS // 최신 VC++ 컴파일 시 경고 방지
-#pragma comment(lib, "ws2_32")
 #include <winsock2.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include "LowLevel_Data.h"
+#include <list>
+#include "LowLevelData.h"
+#pragma comment(lib, "ws2_32")
+#pragma comment(lib, "winmm.lib")
+#define _WINSOCK_DEPRECATED_NO_WARNINGS // 최신 VC++ 컴파일 시 경고 방지
 
 #define SERVERPORT 15073
+#define FPS 1
 
 struct Param {
 	SOCKET client_sock;
@@ -21,13 +24,17 @@ CRITICAL_SECTION cs;
 // 전역 데이터
 // 연결 최대 4개
 bool isConnect[MAX_PLAYER_LENGTH] = { false, false, false, false };
+bool isPlay = false;
+bool isStart = false;
+bool isSend = false;
+
 SOCKET connectedSocket[4] = { NULL, NULL, NULL, NULL };
 WaitRoomData waitRoomData;
 GameSceneData gameSceneData;
-BulletData bulletData;
-MobData m;
-EventParameter e;
-PlayerInput p[MAX_PLAYER_LENGTH];
+std::list<BulletData> bulletDatas;
+std::list<MobData> mobDatas;
+EventParameter eventParameter;
+PlayerInput playerInput[MAX_PLAYER_LENGTH];
 int connectedCount = 0;
 
 
@@ -115,73 +122,39 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 
 	int readyCount = 0;
 
-	// 메시지 종류
-	// MSG_MESSAGE_NULL - 메시지 전송 필요 없을 시(ex 대기 방 요청x or  로딩 시)
-
-	// 대기 방에서 전송
-	// MSG_WAIT_DATA, 요청 혹은 클라이언트 연결 종료될 시 다른 클라에 전송
-	// MSG_GAME_ALL_READY - 업데이트 결과 전부 준비 시 전송
-
-	// 게임 씬에서 전송
-	// MSG_GAME_START - 최초 시작 시 전송 메시지 로딩 끝나고 전송
-	// MSG_SCENE_DATA
-	// MSG_BULLET_DATA
-	// MSG_MOB_DATA
-	
 	while (true) {
+		std::cout << "cycle" << std::endl;
+		if (!isPlay || (isPlay && isSend)) {
+			// 데이터 송신 - 메세지 타입 및 사이즈
+			retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
+			if (retval == SOCKET_ERROR) err_display("send(), message");
 
-		// 데이터 송신 - 메세지 타입 및 사이즈
-		retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
-		if (retval == SOCKET_ERROR) err_quit("send(), message");
+			std::cout << "sendmessage type: " << sendmessage.type << std::endl;
 
-		std::cout << "sendmessage type: " << sendmessage.type << std::endl;
+			// 데이터 송신 - 메세지에 해당하는 데이터 송신
+			switch (sendmessage.type) {
+			case MSG_WAIT_ROOM_DATA:
+				retval = send(client_sock, (char*)&waitRoomData, sizeof(WaitRoomData), 0);
+				if (retval == SOCKET_ERROR) err_display("send(), message");
+				std::cout << "send roomdata" << std::endl;
+				break;
+			case MSG_GAME_START:
+				break;
+			case MSG_SCENE_DATA:
+				retval = send(client_sock, (char*)&gameSceneData, sizeof(GameSceneData), 0);
+				if (retval == SOCKET_ERROR) err_display("send(), message");
+				std::cout << "send roomdata" << std::endl;
+				break;
+			case MSG_BULLET_DATA:
+				break;
+			case MSG_MOB_DATA:
+				break;
+			default:
+				break;
+			}
 
-		// 데이터 송신 - 메세지에 해당하는 데이터 송신
-		switch (sendmessage.type) {
-		case MSG_WAIT_ROOM_DATA:
-			retval = send(client_sock, (char*)&waitRoomData, sizeof(WaitRoomData), 0);
-			if (retval == SOCKET_ERROR) err_quit("send(), message");
-			std::cout << "send roomdata" << std::endl;
-			break;
-		case MSG_GAME_START:
-			break;
-		case MSG_SCENE_DATA:
-			break;
-		case MSG_BULLET_DATA:
-			break;
-		case MSG_MOB_DATA:
-			break;
-		default:
-			break;
-		}
-
-		// 데이터 수신 - 메세지 타입 및 사이즈
-		retval = recvn(client_sock, (char*)&receivemessage, sizeof(NetGameMessage), 0);
-		if (retval == SOCKET_ERROR) {
-			err_display("recvn, ready message");
-			isConnect[threadnum] = false;
-			connectedCount--;
-			waitRoomData.playerWaitStates[threadnum] = WAIT_NOT_CONNECTED;
-			sendmessage.type = MSG_WAIT_ROOM_DATA;
-			sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
-			SendtoAll(sendmessage);
-			closesocket(client_sock);
-			std::cout << "end communication thread" << std::endl;
-			return 0;
-		}
-
-		std::cout << "recvmessage type: " << receivemessage.type << std::endl;
-
-		UINT datasize = GetMessageParameterSize(receivemessage.type);
-
-		//EnterCriticalSection(&cs);
-		// 데이터 수신 - 메세지 정보에 따른 후속 정보
-		switch (receivemessage.type)
-		{
-			// 대기 방 수신 가능 메시지
-			// 메시지 수신 시 다음 메시지 정보 전송(대기 방 갱신)
-		case MSG_REQ_READY:
-			retval = recvn(client_sock, (char*)&receivemessage, datasize, 0);
+			// 데이터 수신 - 메세지 타입 및 사이즈
+			retval = recvn(client_sock, (char*)&receivemessage, sizeof(NetGameMessage), 0);
 			if (retval == SOCKET_ERROR) {
 				err_display("recvn, ready message");
 				isConnect[threadnum] = false;
@@ -194,61 +167,98 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				std::cout << "end communication thread" << std::endl;
 				return 0;
 			}
-			waitRoomData.playerWaitStates[threadnum] = WAIT_READY;
-			std::cout << "recv ready msg" << std::endl;
-			readyCount = 0;
-			for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
-			{
-				if (waitRoomData.playerWaitStates[i] == WAIT_READY) {
-					readyCount++;
-				}
-			}
-			if (readyCount == connectedCount) {
-				sendmessage.type = MSG_GAME_ALL_READY;
-			}
-			else {
-				sendmessage.type = MSG_WAIT_ROOM_DATA;
-			}
-			sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
-			SendtoAll(sendmessage);
-			break;
 
-		case MSG_CANCLE_READY:
-			retval = recvn(client_sock, (char*)&receivemessage, datasize, 0);
-			if (retval == SOCKET_ERROR || 0) {
-				err_display("recvn, ready message");
-				isConnect[threadnum] = false;
-				connectedCount--; 
-				waitRoomData.playerWaitStates[threadnum] = WAIT_NOT_CONNECTED;
+			std::cout << "recvmessage type: " << receivemessage.type << std::endl;
+
+			UINT datasize = GetMessageParameterSize(receivemessage.type);
+
+			//EnterCriticalSection(&cs);
+			// 데이터 수신 - 메세지 정보에 따른 후속 정보
+			switch (receivemessage.type)
+			{
+				// 대기 방 수신 가능 메시지
+				// 메시지 수신 시 다음 메시지 정보 전송(대기 방 갱신)
+			case MSG_REQ_READY:
+				retval = recvn(client_sock, (char*)&receivemessage, datasize, 0);
+				if (retval == SOCKET_ERROR) {
+					err_display("recvn, ready message");
+					isConnect[threadnum] = false;
+					connectedCount--;
+					waitRoomData.playerWaitStates[threadnum] = WAIT_NOT_CONNECTED;
+					sendmessage.type = MSG_WAIT_ROOM_DATA;
+					sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
+					SendtoAll(sendmessage);
+					closesocket(client_sock);
+					std::cout << "end communication thread" << std::endl;
+					return 0;
+				}
+				waitRoomData.playerWaitStates[threadnum] = WAIT_READY;
+				std::cout << "recv ready msg" << std::endl;
+				readyCount = 0;
+				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
+				{
+					if (waitRoomData.playerWaitStates[i] == WAIT_READY) {
+						readyCount++;
+					}
+				}
+				if (readyCount == connectedCount) {
+					sendmessage.type = MSG_GAME_ALL_READY;
+					isPlay = true;
+					isStart = true;
+					SendtoAll(sendmessage);
+				}
+				else {
+					sendmessage.type = MSG_WAIT_ROOM_DATA;
+				}
+				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
+				SendtoAll(sendmessage);
+				break;
+
+			case MSG_CANCLE_READY:
+				retval = recvn(client_sock, (char*)&receivemessage, datasize, 0);
+				if (retval == SOCKET_ERROR || 0) {
+					err_display("recvn, ready message");
+					isConnect[threadnum] = false;
+					connectedCount--;
+					waitRoomData.playerWaitStates[threadnum] = WAIT_NOT_CONNECTED;
+					sendmessage.type = MSG_WAIT_ROOM_DATA;
+					sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
+					SendtoAll(sendmessage);
+					std::cout << "end communication thread" << std::endl;
+					return 0;
+				}
+				// 레디 취소 처리
+				std::cout << "recv ready cancle msg" << std::endl;
+				readyCount--;
+				waitRoomData.playerWaitStates[threadnum] = WAIT_CONNECTED_NORMAL;
 				sendmessage.type = MSG_WAIT_ROOM_DATA;
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
 				SendtoAll(sendmessage);
-				std::cout << "end communication thread" << std::endl;
-				return 0;
+				break;
+
+				// 게임 씬 수신 가능 메시지
+			case NetGameMessageType::MSG_PLAYER_INPUT:
+				retval = recvn(client_sock, (char*)&playerInput[threadnum], datasize, 0);
+				if (retval == SOCKET_ERROR) err_quit("recvn, player input message");
+				// 받은 인풋 상태 저장, 업데이트에 영향
+
+				std::cout << "player upinput: " << playerInput[threadnum].isPressedMoveUp << std::endl;
+				std::cout << "player downinput: " << playerInput[threadnum].isPressedMoveDown << std::endl;
+				std::cout << "player leftinput: " << playerInput[threadnum].isPressedMoveLeft << std::endl;
+				std::cout << "player rightinput: " << playerInput[threadnum].isPressedMoveRight << std::endl;
+				break;
+
+			default:
+				break;
 			}
-			// 레디 취소 처리
-			std::cout << "recv ready cancle msg" << std::endl;
-			readyCount--;
-			waitRoomData.playerWaitStates[threadnum] = WAIT_CONNECTED_NORMAL;
-			sendmessage.type = MSG_WAIT_ROOM_DATA;
-			sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
-			SendtoAll(sendmessage);
-			break;
-
-		//	// 게임 씬 수신 가능 메시지
-		//case NetGameMessageType::MSG_PLAYER_INPUT:
-		//	retval = recvn(client_sock, (char*)&p[threadnum], datasize, 0);
-		//	if (retval == SOCKET_ERROR) err_quit("recvn, player input message");
-		//	// 받은 인풋 상태 저장, 업데이트에 영향
-		//	break;
-
-		default:
-			break;
 		}
+		
+		isSend = false; // 업데이트 대기
+
 		//LeaveCriticalSection(&cs);
 	}
 
-	
+
 	isConnect[threadnum] = false;
 	connectedCount--;
 	waitRoomData.playerWaitStates[threadnum] = WAIT_NOT_CONNECTED;
@@ -257,31 +267,53 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	SendtoAll(sendmessage);
 
 	closesocket(client_sock);
-	std::cout << "end communication thread"<<std::endl;
+	std::cout << "end communication thread" << std::endl;
 	return 0;
 }
 
 DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
-	while (true) {
-		// collision move 
-		// 플레이어 관련
-		//for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
-		//{
-		//	if (isConnect[i]) {
-		//		if (p[i].isPressedMoveUp) {gameSceneData.playerState[i].positionY -= 1;}
-		//		if (p[i].isPressedMoveDown) {gameSceneData.playerState[i].positionY += 1;}
-		//		if (p[i].isPressedMoveLeft) { gameSceneData.playerState[i].positionX -= 1; }
-		//		if (p[i].isPressedMoveRight) { gameSceneData.playerState[i].positionX += 1; }
-		//	}
-		//}
-		// 몹 관련
-		// 총알 관련
-		//std::cout << "update" << std::endl;
-		Sleep(1000);
-	}
+	DWORD lastTime = timeGetTime();
+	DWORD currTime;
+	DWORD Delta = 0;
 
+	while (true) {
+		if (isPlay) {
+			if (isStart) { // 시작 2초 후부터 업데이트 
+				Sleep(2000);
+				isStart = false;
+			}
+
+			//Deltatime
+			currTime = timeGetTime();
+			Delta = (currTime - lastTime) * 0.001f;
+
+			if (Delta >= 1 / FPS) {
+				//플레이어 관련
+
+				// move
+				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
+				{
+					if (isConnect[i]) {
+						if (playerInput[i].isPressedMoveUp) { gameSceneData.playerState[i].positionY -= 1; }
+						if (playerInput[i].isPressedMoveDown) { gameSceneData.playerState[i].positionY += 1; }
+						if (playerInput[i].isPressedMoveLeft) { gameSceneData.playerState[i].positionX -= 1; }
+						if (playerInput[i].isPressedMoveRight) { gameSceneData.playerState[i].positionX += 1; }
+					}
+				}
+		
+				lastTime = currTime;
+				isSend = true; // 업데이트 후 메시지 전송
+				std::cout << "update" << std::endl;
+			}
+		}
+
+		if (connectedCount == 0) {
+			isPlay = false;
+		}
+	}
 	return 0;
 }
+
 
 int main(int argc, char* argv[]) {
 
