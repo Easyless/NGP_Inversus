@@ -240,7 +240,16 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			case NetGameMessageType::MSG_PLAYER_INPUT:
 				retval = recvn(client_sock, (char*)&playerInput[threadnum], datasize, 0);
 				if (retval == SOCKET_ERROR) err_quit("recvn, player input message");
+
 				// 받은 인풋 상태 저장, 업데이트에 영향
+				if (playerInput[threadnum].shootInput != PlayerShootType::None) { // 총알 생성
+					BulletData* b = new BulletData;
+					b->ownerPlayer = threadnum;
+					b->positionX = gameSceneData.playerState[threadnum].positionX;
+					b->positionY = gameSceneData.playerState[threadnum].positionY;
+					b->shootDirection = playerInput[threadnum].shootInput;
+					bulletDatas.push_back(*b);
+				}
 
 				std::cout << "player upinput: " << playerInput[threadnum].isPressedMoveUp << std::endl;
 				std::cout << "player downinput: " << playerInput[threadnum].isPressedMoveDown << std::endl;
@@ -252,7 +261,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				break;
 			}
 		}
-		
+
 		isSend = false; // 업데이트 대기
 
 		//LeaveCriticalSection(&cs);
@@ -300,7 +309,38 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						if (playerInput[i].isPressedMoveRight) { gameSceneData.playerState[i].positionX += 1; }
 					}
 				}
-		
+
+				for (auto b : bulletDatas)
+				{
+					switch (b.shootDirection)
+					{
+					case PlayerShootType::ShootUp:
+						b.positionY -= BULLETSPEED;
+						break;
+					case PlayerShootType::ShootDown:
+						b.positionY += BULLETSPEED;
+						break;
+					case PlayerShootType::ShootLeft:
+						b.positionX -= BULLETSPEED;
+						break;
+					case PlayerShootType::ShootRight:
+						b.positionX += BULLETSPEED;
+						break;
+					default:
+						break;
+					}
+				}
+
+
+				// collision 
+
+				// 몹, 플레이어 충돌 - 플레이어 라이프 감소
+				// 몹, 총알 충돌 - 몹 삭제 처리
+
+				// create
+
+				// create mob
+
 				lastTime = currTime;
 				isSend = true; // 업데이트 후 메시지 전송
 				std::cout << "update" << std::endl;
