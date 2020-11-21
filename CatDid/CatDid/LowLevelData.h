@@ -2,10 +2,16 @@
 #include <Windows.h>
 #define MAX_PLAYER_LENGTH 4
 #define MAX_LIFE_COUNT 3
-#define BLOCK_COUNT_X 19 // 단위 갯수, 맵에서 블럭 가로,세로 개수
-#define BLOCK_COUNT_Y 19 // 단위 갯수, 맵에서 블럭 가로,세로 개수
-#define BLOCK_SIZE_X 50 //단위 px , 블럭의 픽셀 크기
-#define BLOCK_SIZE_Y 50 //단위 px , 블럭의 픽셀 크기
+#define BLOCK_COUNT_X 21 // 11.21 수정 단위 갯수, 맵에서 블럭 가로,세로 개수
+#define BLOCK_COUNT_Y 21 // 11.21 수정 단위 갯수, 맵에서 블럭 가로,세로 개수
+#define BLOCK_SIZE_X 40 // 11.21 수정 단위 px , 블럭의 픽셀 크기
+#define BLOCK_SIZE_Y 40 // 11.21 수정 단위 px , 블럭의 픽셀 크기
+#define BULLET_SIZE_X 8 //11.21 추가 : 총알 사이즈 
+#define BULLET_SIZE_Y 8 //11.21 추가 : 총알 사이즈 
+#define PLAYER_SIZE_X 25 //11.21 추가 : 플레이어, 적 사이즈
+#define PLAYER_SIZE_Y 25 //11.21 추가 : 플레이어, 적 사이즈
+#define EXPLOSION_SIZE 3 //11.21 추가 : 폭발 블럭 갯수 (3x3) 블럭
+#define EXPLOSION_SIZE 3 //11.21 추가 : 폭발 블럭 갯수 (3x3) 블럭
 #define MAP_SIZE_X (BLOCK_COUNT_X * BLOCK_SIZE_X) //단위 px, 맵 전체 픽셀 크기
 #define MAP_SIZE_Y (BLOCK_COUNT_Y * BLOCK_SIZE_Y) //단위 px, 맵 전체 픽셀 크기
 #define SERVER_PORT 15073
