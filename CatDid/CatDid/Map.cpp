@@ -195,3 +195,15 @@ void Map::Reset(Difficulty dif)
 	break;
 	}
 }
+
+void Map::RefreshFromData( const GameSceneData& data )
+{
+	for ( size_t y = 0; y < BLOCK_COUNT_Y; y++ )
+	{
+		for ( size_t x = 0; x < BLOCK_COUNT_X; x++ )
+		{
+			this->GetBlock( x, y ).state = data.mapData.blockState[y][x] ? BlockState::BreakableOn : BlockState::Off;
+		}
+	}
+
+}

@@ -106,7 +106,6 @@ InversusMenu::InversusMenu(InversusFramework* framework)
 		[this]( )
 	{
 		this->Deactive(); 
-		this->framework->controller->Reset( Difficulty::Normal );
 		this->framework->Start();
 	};
 
@@ -405,7 +404,7 @@ void InversusMenu::Update(float deltaTime)
 			{
 				this->Position = { 0,0 };
 				isReing = false;
-				this->framework->controller->Reset(Difficulty::Normal);
+				//this->framework->controller->Reset(Difficulty::Normal);
 			}
 		}
 	}

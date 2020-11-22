@@ -120,6 +120,12 @@
     <ClInclude Include="LowLevelData.h">
       <Filter>헤더 파일\Sever-Communication</Filter>
     </ClInclude>
+    <ClInclude Include="ClientSocketManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="InversusNetworkController.h">
+      <Filter>헤더 파일\Inversus</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -175,6 +181,12 @@
     </ClCompile>
     <ClCompile Include="InversusMenu.cpp">
       <Filter>소스 파일\Inversus</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientSocketManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="InversusNetworkController.cpp">
+      <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

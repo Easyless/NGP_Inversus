@@ -101,8 +101,9 @@ void ClientSocketManager::SendCancelReadyMsg()
 	this->Send( NetGameMessageType::MSG_CANCLE_READY );
 }
 
-void ClientSocketManager::SendPlayerInput( const PlayerInput input )
+void ClientSocketManager::SendPlayerInput( const PlayerInput& input )
 {
+	this->Send( NetGameMessageType::MSG_PLAYER_INPUT, 1, (void*)&input );
 }
 
 void ClientSocketManager::RecvProc()

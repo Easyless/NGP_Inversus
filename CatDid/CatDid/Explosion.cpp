@@ -66,7 +66,7 @@ void Explosion::TurnActive(Vec2DF position, COLORREF color, bool CheckCollision)
 {
 	this->Active();
 	effecting = false;
-	this->framework->controller->PostExplosion();
+	//this->framework->controller->PostExplosion();
 
 	this->state = GenState::On;
 	this->color = color;
@@ -99,7 +99,7 @@ void Explosion::TurnActive(Vec2DF position, COLORREF color, bool CheckCollision)
 		this->transform.Size = Vec2DF{ 0,0 };
 	}
 
-	this->framework->CheckCollision(*this);
+	//this->framework->CheckCollision(*this);
 
 
 }

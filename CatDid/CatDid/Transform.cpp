@@ -25,7 +25,7 @@ void Transform::Translate(Vec2D<Ty> vec)
 	for (size_t i = 0; i < 4; i++)
 	{
 		this->Position += vec/4;
-		if (this->framework->CheckCollision(this->obj)) { this->Position -= vec / 4; break; }
+		//if (this->framework->CheckCollision(this->obj)) { this->Position -= vec / 4; break; }
 	}
 }
 

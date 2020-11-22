@@ -103,9 +103,9 @@ Vec2DF InversusContainer::GetGameDisplaySize() const
 Vec2DF InversusContainer::GetMargin() const
 {
 	auto blockSize = this->BlockMap.GetBlockSize();
-	int expNum = static_cast<int>(this->framework->controller->explosionNum);
-	blockSize.x += sin(expNum + (rand()%4) / 1.5f) * expNum;
-	blockSize.y += sin(expNum + (rand()%4) / 1.5f) * expNum;
+	//int expNum = static_cast<int>(this->framework->controller->explosionNum);
+	//blockSize.x += sin(expNum + (rand()%4) / 1.5f) * expNum;
+	//blockSize.y += sin(expNum + (rand()%4) / 1.5f) * expNum;
 	return blockSize;
 }
 void InversusContainer::Reset(Difficulty diff)

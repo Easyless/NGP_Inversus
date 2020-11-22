@@ -2,6 +2,7 @@
 #include <vector>
 #include "GameObject.h"
 #include "InversusEnum.h"
+#include "ClientSocketManager.h"
 
 class Block : public GameObject
 {
@@ -63,4 +64,5 @@ public:
 	std::pair<size_t, size_t> GetSize() const;
 	Vec2DF GetBlockSize() const;
 	void Reset(Difficulty dif);
+	void RefreshFromData( const GameSceneData& data );
 };

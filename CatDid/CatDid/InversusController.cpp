@@ -134,7 +134,7 @@ void InversusController::PostGameOver()
 	this->BreakCombo();
 	this->state = GameState::Over;
 	this->framework->menu->Active();
-	this->framework->RenewMaxScore(this->Score);
+	//this->framework->RenewMaxScore(this->Score);
 }
 void InversusController::PostExplosion()
 {

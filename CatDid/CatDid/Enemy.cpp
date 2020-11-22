@@ -42,7 +42,7 @@ void Enemy::Update(float deltaTime)
 			this->CharginCount -= deltaTime;
 			if (CharginCount < 0)
 			{
-				this->framework->controller->PostAddScore();
+				//this->framework->controller->PostAddScore();
 				this->Deactive();
 				this->framework->container->ActiveExplosion(this->transform.Position, this->color);
 			}
@@ -153,7 +153,7 @@ bool Enemy::isCollision(GameObject& other)
 		}
 		else if( other.tag == "Bullet")
 		{
-			this->framework->controller->PostAddScore(this->isSpecial);
+			//this->framework->controller->PostAddScore(this->isSpecial);
 			this->Deactive();
 			other.Deactive();
 			this->framework->container->ActiveExplosion(this->transform.Position, this->color);

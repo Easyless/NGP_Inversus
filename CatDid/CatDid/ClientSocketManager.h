@@ -114,7 +114,7 @@ public:
 
 	void SendReqReadyMsg();
 	void SendCancelReadyMsg();
-	void SendPlayerInput( const PlayerInput input );
+	void SendPlayerInput( const PlayerInput& input );
 
 	void RecvProc();
 	static int Recvn( SOCKET socket, char* buf, int len, int flags );

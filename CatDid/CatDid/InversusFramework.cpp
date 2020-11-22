@@ -7,12 +7,13 @@
 #include "GameObject.h"
 #include "InversusMenu.h"
 #include <array>
+#include "ClientSocketManager.h"
 #pragma comment(lib,"msimg32")
 InversusFramework* InversusFramework::instance = nullptr;
 
 
 InversusFramework::InversusFramework()
-	:menu(new InversusMenu(this)),container(new InversusContainer(this)), controller(new InversusController(this))
+	:menu(new InversusMenu(this)),container(new InversusContainer(this)), controller(new InversusNetworkController(this))
 {
 
 }
@@ -36,18 +37,19 @@ void InversusFramework::Start()
 
 void InversusFramework::Create()
 {
-
+	this->socket = ClientSocketManager::GetInstance();
+	this->controller->InitlizeWithSocket( this->socket );
 }
 
 void InversusFramework::Update(float deltaTime)
 {
 	this->controller->Update(deltaTime);
-	container->player.Update(deltaTime);
-	for (auto& effect : container->explosionEffect) { effect.Update(deltaTime); }
-	for (auto& bullet : container->bullets) { bullet.Update(deltaTime); }
-	for (auto& enemy : container->enemys) { enemy.Update(deltaTime); }
-	for (auto& drop : container->dropBullets) { drop.Update(deltaTime); }
-	container->BlockMap.Update(deltaTime);
+	//container->player.Update(deltaTime);
+	//for (auto& effect : container->explosionEffect) { effect.Update(deltaTime); }
+	//for (auto& bullet : container->bullets) { bullet.Update(deltaTime); }
+	//for (auto& enemy : container->enemys) { enemy.Update(deltaTime); }
+	//for (auto& drop : container->dropBullets) { drop.Update(deltaTime); }
+	//container->BlockMap.Update(deltaTime);
 	this->menu->Update(deltaTime);
 
 }
@@ -75,89 +77,6 @@ void InversusFramework::MenuDraw(PaintInfo info)
 	this->menu->Draw(info);
 }
 
-bool InversusFramework::CheckCollision(GameObject& obj)
-{
-	bool returnValue = false;
-
-	if (obj.transform.GetCheckMap("Player"))
-	{
-		auto& targetObj = this->container->player;
-		if (targetObj.GetActiveState() && obj.transform.CheckCollision(targetObj.transform)) 
-		{
-			returnValue |= obj.isCollision(targetObj);
-			returnValue |= targetObj.isCollision(obj);
-		}
-	}
-	if (obj.transform.GetCheckMap("Block"))
-	{
-		auto idx = this->container->BlockMap.GetPositionIndex(obj.transform.Position);
-		int centerX = idx.first;
-		int centerY = idx.second;
-		int idxArr[9][2] =
-		{
-			{centerX - 1,centerY - 1},{centerX,centerY - 1},{centerX + 1,centerY - 1},
-			{centerX - 1,centerY},{centerX,centerY},{centerX + 1,centerY},
-			{centerX - 1,centerY + 1},{centerX,centerY + 1},{centerX + 1,centerY + 1}
-		};
-		for (size_t i = 0; i < 9; i++)
-		{
-			if (idxArr[i][0] >= 0 && idxArr[i][0] < this->container->BlockMap.GetSize().first
-				&& idxArr[i][1] >= 0 && idxArr[i][1] < this->container->BlockMap.GetSize().second)
-			{
-				auto& targetObj = this->container->BlockMap.GetBlock(idxArr[i][0], idxArr[i][1]);
-				if (targetObj.GetActiveState() && obj.transform.CheckCollision(targetObj.transform))
-				{
-					returnValue |= obj.isCollision(targetObj);
-					returnValue |= targetObj.isCollision(obj);
-				}
-			}
-		}
-	}
-	if (obj.transform.GetCheckMap("Bullet"))
-	{
-		for (auto& targetObj : this->container->bullets)
-		{
-			if (targetObj.GetActiveState())
-			{
-				if (targetObj.GetActiveState() && obj.transform.CheckCollision(targetObj.transform))
-				{
-					returnValue |= obj.isCollision(targetObj);
-					returnValue |= targetObj.isCollision(obj);
-				}
-			} 
-		}
-	}
-	if (obj.transform.GetCheckMap("Enemy"))
-	{
-		for (auto& targetObj : this->container->enemys)
-		{
-			if (targetObj.state == GenState::On)
-			{
-				if (targetObj.GetActiveState() && obj.transform.CheckCollision(targetObj.transform))
-				{
-					returnValue |= obj.isCollision(targetObj);
-					returnValue |= targetObj.isCollision(obj);
-				}
-			}
-		}
-	}
-	if (obj.transform.GetCheckMap("DropBullet"))
-	{
-		for (auto& targetObj : this->container->dropBullets)
-		{
-			if (targetObj.GetActiveState())
-			{
-				if (targetObj.GetActiveState() && obj.transform.CheckCollision(targetObj.transform))
-				{
-					returnValue |= obj.isCollision(targetObj);
-					returnValue |= targetObj.isCollision(obj);
-				}
-			}
-		}
-	}
-	return returnValue;
-}
-
 Vec2DF InversusFramework::GetDisplaySize() const
 {
 	return this->container->GetGameDisplaySize();
@@ -170,13 +89,4 @@ Vec2DF InversusFramework::GetMargin() const
 void InversusFramework::MouseInput(Vec2DU MousePos, UINT iMessage)
 {
 	this->menu->MouseInput(MousePos, iMessage);
-}
-
-void InversusFramework::RenewMaxScore(int Score)
-{
-	this->maxScore = max(Score, this->maxScore);
-}
-int InversusFramework::GetScore() const
-{
-	return this->maxScore;
 }

@@ -164,6 +164,7 @@
     <ClInclude Include="InversusEnum.h" />
     <ClInclude Include="InversusFramework.h" />
     <ClInclude Include="InversusMenu.h" />
+    <ClInclude Include="InversusNetworkController.h" />
     <ClInclude Include="LowLevelData.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="PaintInfo.h" />
@@ -187,6 +188,7 @@
     <ClCompile Include="InversusController.cpp" />
     <ClCompile Include="InversusFramework.cpp" />
     <ClCompile Include="InversusMenu.cpp" />
+    <ClCompile Include="InversusNetworkController.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="Bullet.cpp" />
     <ClCompile Include="CatDid.cpp" />

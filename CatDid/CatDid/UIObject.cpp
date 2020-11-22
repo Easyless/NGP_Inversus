@@ -29,13 +29,13 @@ void UILifeObject::Draw(PaintInfo info)
 	auto oldPen = (HBRUSH)SelectObject(info.hdc, GetStockObject(WHITE_BRUSH));
 	auto oldbr = (HBRUSH)SelectObject(info.hdc, GetStockObject(WHITE_BRUSH));
 	auto oldFont = (HFONT)SelectObject(info.hdc, font);
-	for (size_t i = 0; i < this->framework->controller->life; i++)
-	{
-		auto rt = RectF(this->transform.Position + Vec2DF{ (this->transform.Size.x + 10) * i ,0 }, this->transform.Size.x, this->transform.Size.y);
-		RoundRect(info.hdc, rt.left, rt.top, rt.right, rt.bottom, 10, 10);
-		RECT rtp = rt;
-		DrawText(info.hdc, comment.data(), comment.length(), &rtp, DT_CENTER | DT_VCENTER | DT_NOCLIP | DT_SINGLELINE);
-	}
+	//for (size_t i = 0; i < this->framework->controller->life; i++)
+	//{
+	//	auto rt = RectF(this->transform.Position + Vec2DF{ (this->transform.Size.x + 10) * i ,0 }, this->transform.Size.x, this->transform.Size.y);
+	//	RoundRect(info.hdc, rt.left, rt.top, rt.right, rt.bottom, 10, 10);
+	//	RECT rtp = rt;
+	//	DrawText(info.hdc, comment.data(), comment.length(), &rtp, DT_CENTER | DT_VCENTER | DT_NOCLIP | DT_SINGLELINE);
+	//}
 	SelectObject(info.hdc, oldFont);
 	SelectObject(info.hdc, oldPen);
 	SelectObject(info.hdc, oldbr);
@@ -68,7 +68,7 @@ void UIScoreObject::Draw(PaintInfo info)
 	RoundRect(info.hdc, rt.left, rt.top, rt.right, rt.bottom, 10, 10);
 
 	ScoreWss.str(L"");
-	ScoreWss << this->framework->controller->Score;
+	//ScoreWss << this->framework->controller->Score;
 	SIZE textSize;
 	GetTextExtentPoint(info.hdc, ScoreWss.str().data(), ScoreWss.str().length(), &textSize);
 	TextOut(info.hdc, this->transform.Position.x - transform.Size.x / 2 + 5, this->transform.Position.y - transform.Size.y / 2 + 15, ScoreComment.data(), ScoreComment.length());
@@ -91,30 +91,30 @@ void UIScoreObject::Draw(PaintInfo info)
 		ScoreWss << L"PAUSE";
 		GetTextExtentPoint(info.hdc, ScoreWss.str().data(), ScoreWss.str().length(), &textSize);
 	}
-	else if (this->framework->controller->isCombing)
-	{
-		ScoreWss << L"X" << this->framework->controller->Combo;
-		GetTextExtentPoint(info.hdc, ScoreWss.str().data(), ScoreWss.str().length(), &textSize);
-		{
-			auto rrt = RectF(
-				Vec2DF{ this->transform.Position.x, this->transform.Position.y + textSize.cy / 2 }
-			, 96 + 50, 96 + 50);
-			SelectObject(info.hdc, GetStockObject(BLACK_BRUSH));
-			SelectObject(info.hdc, GetStockObject(NULL_PEN));
-			Vec2DF first = { rrt.left + rrt.GetSize().x / 2, rrt.top };
-			float rotate = this->framework->controller->curComboTime / this->framework->controller->curMaxComboTime * 360;
-			Vec2DF second = first.RotatedPoint(rrt.GetCenter(), rotate - 90);
-			Pie(info.hdc, rrt.left, rrt.top, rrt.right, rrt.bottom,
-				first.x, first.y,
-				second.x, second.y
-			);
-			SelectObject(info.hdc, GetStockObject(WHITE_BRUSH));
-			rrt = RectF(
-				Vec2DF{ this->transform.Position.x, this->transform.Position.y + textSize.cy / 2 }
-			, 96 + 12, 96 + 12);
-			Ellipse(info.hdc, rrt.left, rrt.top, rrt.right, rrt.bottom);
-		}
-	}
+	//else if (this->framework->controller->isCombing)
+	//{
+	//	ScoreWss << L"X" << this->framework->controller->Combo;
+	//	GetTextExtentPoint(info.hdc, ScoreWss.str().data(), ScoreWss.str().length(), &textSize);
+	//	{
+	//		auto rrt = RectF(
+	//			Vec2DF{ this->transform.Position.x, this->transform.Position.y + textSize.cy / 2 }
+	//		, 96 + 50, 96 + 50);
+	//		SelectObject(info.hdc, GetStockObject(BLACK_BRUSH));
+	//		SelectObject(info.hdc, GetStockObject(NULL_PEN));
+	//		Vec2DF first = { rrt.left + rrt.GetSize().x / 2, rrt.top };
+	//		float rotate = this->framework->controller->curComboTime / this->framework->controller->curMaxComboTime * 360;
+	//		Vec2DF second = first.RotatedPoint(rrt.GetCenter(), rotate - 90);
+	//		Pie(info.hdc, rrt.left, rrt.top, rrt.right, rrt.bottom,
+	//			first.x, first.y,
+	//			second.x, second.y
+	//		);
+	//		SelectObject(info.hdc, GetStockObject(WHITE_BRUSH));
+	//		rrt = RectF(
+	//			Vec2DF{ this->transform.Position.x, this->transform.Position.y + textSize.cy / 2 }
+	//		, 96 + 12, 96 + 12);
+	//		Ellipse(info.hdc, rrt.left, rrt.top, rrt.right, rrt.bottom);
+	//	}
+	//}
 	else 
 	{
 		ScoreWss << "X0";

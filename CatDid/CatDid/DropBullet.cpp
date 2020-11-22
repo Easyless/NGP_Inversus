@@ -34,7 +34,7 @@ void DropBullet::Update(float deltaTime)
 			{
 				curRotate -= 360;
 			}
-			this->framework->CheckCollision(*this);
+			//this->framework->CheckCollision(*this);
 		}
 	}
 }
