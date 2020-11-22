@@ -10,6 +10,8 @@
 
 #define SERVERPORT 15073
 #define FPS 1
+#define BULLETSPEED 1
+#define PLAYERSPEED 1
 
 struct Param {
 	SOCKET client_sock;
