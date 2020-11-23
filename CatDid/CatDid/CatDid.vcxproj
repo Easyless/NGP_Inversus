@@ -213,6 +213,9 @@
     <Image Include="InversusResource\help.bmp" />
     <Image Include="small.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="serverAddr.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

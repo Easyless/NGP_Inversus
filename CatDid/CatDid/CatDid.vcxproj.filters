@@ -205,4 +205,9 @@
       <Filter>리소스 파일</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="serverAddr.txt">
+      <Filter>리소스 파일</Filter>
+    </Text>
+  </ItemGroup>
 </Project>

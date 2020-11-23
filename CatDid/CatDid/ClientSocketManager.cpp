@@ -88,7 +88,7 @@ void ClientSocketManager::Send( NetGameMessageType type, int count, void* parame
 	if ( ret == SOCKET_ERROR ) err_display( "send()" );
 	if ( message.parameterSize != 0 && parameter != nullptr )
 	{
-		ret = send( this->clientSocket, (char*)&parameter, message.parameterSize, 0 );
+		ret = send( this->clientSocket, (char*)parameter, message.parameterSize, 0 );
 		if ( ret == SOCKET_ERROR ) err_display( "send()" );
 	}
 }
