@@ -10,8 +10,8 @@
 
 #define SERVERPORT 15073
 #define FPS 30
-#define BULLETSPEED 1
-#define PLAYERSPEED 1
+#define BULLET_SPEED 1
+#define PLAYER_SPEED 1
 
 struct Param {
 	SOCKET client_sock;
@@ -44,8 +44,8 @@ void InitSceneData() {
 	gameSceneData.mapData = { false, };
 	for (size_t i = 0; i < 4; i++)
 	{
-		gameSceneData.playerState[i].positionX = i * 50;
-		gameSceneData.playerState[i].positionY = i * 30;
+		gameSceneData.playerState[i].positionX = i  * 50;
+		gameSceneData.playerState[i].positionY = (i + 1) * 30;
 		gameSceneData.playerState[i].isDead = false;
 	}
 }
@@ -136,24 +136,17 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	while (true) {
 		if (!isPlay || (isPlay && isSend)) {
 			// 데이터 송신 - 메세지 타입 및 사이즈
-		SEND_AGAIN:
+
 			if (isPlay) {
 				sendmessage.type = MSG_SCENE_DATA;
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
 			}
 
 			retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
-			if (retval == SOCKET_ERROR) {
-				if (WSAGetLastError() == WSAEWOULDBLOCK)
-					goto SEND_AGAIN;
-				err_display("send()");
-				break;
-			}
 
 			std::cout << "sendmessage type: " << sendmessage.type << std::endl;
 
 			// 데이터 송신 - 메세지에 해당하는 데이터 송신
-		SEND_DATA_AGAIN:
 			switch (sendmessage.type) {
 			case MSG_WAIT_ROOM_DATA:
 				retval = send(client_sock, (char*)&waitRoomData, sizeof(WaitRoomData), 0);
@@ -172,21 +165,10 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			default:
 				break;
 			}
-			if (retval == SOCKET_ERROR) {
-				if (WSAGetLastError() == WSAEWOULDBLOCK)
-					goto SEND_DATA_AGAIN;
-				err_display("send()");
-				break;
-			}
-
-
 
 			// 데이터 수신 - 메세지 타입 및 사이즈
-		RECEIVE_AGAIN:
 			retval = recvn(client_sock, (char*)&receivemessage, sizeof(NetGameMessage), 0);
 			if (retval == SOCKET_ERROR) {
-				if (WSAGetLastError() == WSAEWOULDBLOCK)
-					goto RECEIVE_AGAIN;
 
 				err_display("recvn, ready message");
 				isConnect[threadnum] = false;
@@ -205,7 +187,6 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			UINT datasize = GetMessageParameterSize(receivemessage.type);
 
 			// 데이터 수신 - 메세지 정보에 따른 후속 정보
-		RECEIVE_DATA_AGAIN:
 			switch (receivemessage.type)
 			{
 				// 대기 방 수신 가능 메시지
@@ -269,8 +250,6 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 
 			}
 			if (retval == SOCKET_ERROR) {
-				if (WSAGetLastError() == WSAEWOULDBLOCK)
-					goto SEND_AGAIN;
 				err_display("recvn, ready message");
 				isConnect[threadnum] = false;
 				connectedCount--;
@@ -304,6 +283,8 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 	DWORD currTime;
 	DWORD Delta = 0;
 
+	float x, y;
+
 	while (true) {
 		if (isPlay) {
 			if (isStart) { // 시작 2초 후부터 업데이트 
@@ -327,43 +308,74 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 				{
 					if (isConnect[i]) {
-						if (playerInput[i].isPressedMoveUp) { gameSceneData.playerState[i].positionY -= 1; }
-						if (playerInput[i].isPressedMoveDown) { gameSceneData.playerState[i].positionY += 1; }
-						if (playerInput[i].isPressedMoveLeft) { gameSceneData.playerState[i].positionX -= 1; }
-						if (playerInput[i].isPressedMoveRight) { gameSceneData.playerState[i].positionX += 1; }
+						x = gameSceneData.playerState[i].positionX;
+						y = gameSceneData.playerState[i].positionY;
+
+						if (playerInput[i].isPressedMoveUp) { x -= PLAYER_SPEED; }
+						if (playerInput[i].isPressedMoveDown) { y += PLAYER_SPEED; }
+						if (playerInput[i].isPressedMoveLeft) { x -= PLAYER_SPEED; }
+						if (playerInput[i].isPressedMoveRight) { y += PLAYER_SPEED; }
+
+						gameSceneData.playerState[i].positionX = x;
+						gameSceneData.playerState[i].positionY = y;
 					}
 				}
 
+				// bullet
 				for (auto b : bulletDatas)
 				{
+					x = b.positionX;
+					y = b.positionY;
 					switch (b.shootDirection)
 					{
 					case PlayerShootType::ShootUp:
-						b.positionY -= BULLETSPEED;
+						y -= BULLET_SPEED;
 						break;
 					case PlayerShootType::ShootDown:
-						b.positionY += BULLETSPEED;
+						y += BULLET_SPEED;
 						break;
 					case PlayerShootType::ShootLeft:
-						b.positionX -= BULLETSPEED;
+						x -= BULLET_SPEED;
 						break;
 					case PlayerShootType::ShootRight:
-						b.positionX += BULLETSPEED;
+						x += BULLET_SPEED;
 						break;
 					default:
 						break;
 					}
+					b.positionX = x;
+					b.positionY = y;
 				}
 
 
-				// collision 
+					//BLOCK_SIZE_X
+					//BLOCK_SIZE_Y
+					//BULLET_SIZE_X
+					//BULLET_SIZE_Y
+					//PLAYER_SIZE_X
+					//PLAYER_SIZE_Y
+				
+				//// mob
+				//for (auto m : mobDatas) {
+				//	// 포지션 / 사이즈 위치 블럭 true로 변경
+				//	x = m.positionX / BLOCK_SIZE_X;
+				//	y = m.positionY / BLOCK_SIZE_Y;
+				//	// collision 
 
-				// 몹, 플레이어 충돌 - 플레이어 라이프 감소
-				// 몹, 총알 충돌 - 몹 삭제 처리
+				//	// 몹, 플레이어 충돌 - 플레이어 라이프 감소
+				//	// 몹, 총알 충돌 - 몹 삭제 처리
 
+				//}
+
+				
 				// create
 
 				// create mob
+
+
+
+
+
 				lastTime = currTime;
 				isSend = true; // 업데이트 후 메시지 전송
 			}
@@ -392,8 +404,6 @@ int main(int argc, char* argv[]) {
 	SOCKET listen_sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (listen_sock == INVALID_SOCKET) err_quit("socket()");
 
-	u_long on = TRUE;
-	retval = ioctlsocket(listen_sock, FIONBIO, &on);
 
 	// bind()
 	SOCKADDR_IN serveraddr;
@@ -429,15 +439,8 @@ int main(int argc, char* argv[]) {
 	while (1) {
 
 		// accept()
-	ACCEPT_AGAIN:
 		addrlen = sizeof(clientaddr);
 		client_sock = accept(listen_sock, (SOCKADDR*)&clientaddr, &addrlen);
-		if (client_sock == INVALID_SOCKET) {
-			if (WSAGetLastError() == WSAEWOULDBLOCK)
-				goto ACCEPT_AGAIN;
-			err_display("accept()");
-			break;
-		}
 
 		success = false;
 		for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
