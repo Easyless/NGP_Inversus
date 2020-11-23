@@ -22,6 +22,7 @@ private:
 	float SpecialCharging = false;
 	bool firstGen = true;
 	bool invulnerable = false;
+	int playerIndex = 0;
 	Vec2DF curCharging;
 public:
 	GenState state = GenState::Off;

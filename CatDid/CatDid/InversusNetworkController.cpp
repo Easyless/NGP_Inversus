@@ -29,6 +29,7 @@ void InversusNetworkController::InitlizeWithSocket( ClientSocketManager* socket 
 	this->socket->recvBulletDataFunction =
 		[this]( const BulletDatas& datas )
 	{
+		this->bulletData = datas;
 	};
 }
 
@@ -72,9 +73,39 @@ void InversusNetworkController::RefreshPlayerData()
 	}
 }
 
+Vec2DF GetShootDirection( PlayerShootType type )
+{
+	switch ( type )
+	{
+	case None:
+		return Vec2DF(0,0);
+	case ShootUp:
+		return Vec2DF::Up();
+	case ShootDown:
+		return Vec2DF::Down();
+	case ShootLeft:
+		return Vec2DF::Left();
+	case ShootRight:
+		return Vec2DF::Right();
+	}
+}
+
+void InversusNetworkController::RefreshBulletData()
+{
+	for ( auto& b : this->bulletData )
+	{
+		this->framework->container->AddBullet( Vec2DF( b.positionX, b.positionY ), GetShootDirection( b.shootDirection ) );
+	}
+	this->bulletData.clear();
+}
+
 void InversusNetworkController::RefreshMapData()
 {
 	this->framework->container->BlockMap.RefreshFromData(this->sceneData);
+}
+
+void InversusNetworkController::RefreshMobData()
+{
 }
 
 void InversusNetworkController::GetPlayerInput()
@@ -84,18 +115,36 @@ void InversusNetworkController::GetPlayerInput()
 	input.isPressedMoveRight = GetAsyncKeyState( 'D' ) ? true : false;
 	input.isPressedMoveDown = GetAsyncKeyState( 'S' ) ? true : false;
 
-	//if ( GetAsyncKeyState( VK_UP ) )
-	//{
-	//}
-	//else if ( GetAsyncKeyState( VK_LEFT ) )
-	//{
-	//}
-	//else if ( GetAsyncKeyState( VK_DOWN ) )
-	//{
-	//}
-	//else if ( GetAsyncKeyState( VK_RIGHT ) )
-	//{
-	//}
+	if ( input.shootInput == PlayerShootType::ShootUp && GetAsyncKeyState( VK_UP ) ||
+		input.shootInput == PlayerShootType::ShootDown && GetAsyncKeyState( VK_DOWN ) ||
+		input.shootInput == PlayerShootType::ShootLeft && GetAsyncKeyState( VK_LEFT ) ||
+		input.shootInput == PlayerShootType::ShootRight && GetAsyncKeyState( VK_RIGHT )
+		)
+	{
+		return;
+	}
+	else if ( GetAsyncKeyState( VK_UP ) )
+	{
+		input.shootInput = PlayerShootType::ShootUp;
+	}
+	else if ( GetAsyncKeyState( VK_LEFT ) )
+	{
+		input.shootInput = PlayerShootType::ShootLeft;
+	}
+	else if ( GetAsyncKeyState( VK_DOWN ) )
+	{
+		input.shootInput = PlayerShootType::ShootDown;
+	}
+	else if ( GetAsyncKeyState( VK_RIGHT ) )
+	{
+		input.shootInput = PlayerShootType::ShootRight;
+	}
+	else 
+	{
+		input.shootInput = PlayerShootType::None;
+	}
+
+
 }
 
 void InversusNetworkController::SendPlayerInput()

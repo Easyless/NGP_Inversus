@@ -29,6 +29,7 @@ struct InversusContainer
 	void AddEnemy(Vec2DF Position,bool isSpecial = false);
 	void ActiveExplosion(Vec2DF position, COLORREF color, bool isCollision = true);
 	void DropBullet(Vec2DF position, int count);
+	void RefreshEnemyFromData( const MobDatas& datas );
 	Vec2DF GetGameDisplaySize() const;
 	Vec2DF GetMargin() const;
 	void Reset(Difficulty diff);

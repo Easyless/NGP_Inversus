@@ -95,6 +95,10 @@ void InversusContainer::DropBullet(Vec2DF position, int count)
 	}
 }
 
+void InversusContainer::RefreshEnemyFromData( const MobDatas& datas )
+{
+}
+
 Vec2DF InversusContainer::GetGameDisplaySize() const
 {
 	auto blockCount = this->BlockMap.GetSize();

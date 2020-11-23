@@ -48,3 +48,12 @@ public:
 
 
 };
+
+class DummyTransform
+{
+	Vec2DF Position = Vec2DF{ 0, 0 };
+	Vec2DF Size = Vec2DF{ 0,0 };
+	Vec2DF Scale = Vec2DF{ 1,1 };
+
+	void Translate( const Vec2DF& vec );
+};

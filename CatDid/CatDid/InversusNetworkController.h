@@ -29,7 +29,9 @@ struct InversusNetworkController
 	void Update( float deltaTime );
 	void RecvData();
 	void RefreshPlayerData();
+	void RefreshBulletData();
 	void RefreshMapData();
+	void RefreshMobData();
 	void GetPlayerInput();
 	void SendPlayerInput();
 };

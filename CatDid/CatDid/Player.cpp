@@ -28,6 +28,7 @@ void Player::RefreshFromData( const GameSceneData& data, UINT index )
 	this->state = !data.playerState[index].isDead ? GenState::On : GenState::Off;
 	this->transform.Position.x = data.playerState[index].positionX;
 	this->transform.Position.y = data.playerState[index].positionY;
+	this->playerIndex = index;
 }
 
 void Player::Update(float deltaTime)
@@ -245,16 +246,9 @@ void Player::Draw(PaintInfo info)
 	{
 		HPEN hPen;
 		HBRUSH hBrush;
-		if (this->invulnerable)
-		{
-			hPen = CreatePen(PS_SOLID, 7, RGB(255, 201, 14));
-			hBrush = CreateSolidBrush(RGB(255, 201, 14));
-		}
-		else
-		{
-			hPen = CreatePen(PS_SOLID, 7, RGB(0, 0, 0));
-			hBrush = CreateSolidBrush(RGB(0, 0, 0));
-		}
+		COLORREF playerColor[4] = { RGB( 169, 14, 21 ) ,RGB( 0, 183, 0 ) ,RGB( 0, 75, 151 ) ,RGB( 0, 0, 0 ) };
+		hPen = CreatePen(PS_SOLID, 7, playerColor[this->playerIndex]);
+		hBrush = CreateSolidBrush( playerColor[this->playerIndex] );
 		auto oldPen = (HPEN)SelectObject(info.hdc, hPen);
 		auto oldBrush = (HBRUSH)SelectObject(info.hdc, hBrush);
 		auto rt = RectF(this->transform.Position * info.AntiAliasing, this->transform.Size.x * info.AntiAliasing, this->transform.Size.y * info.AntiAliasing) + info.margin;
