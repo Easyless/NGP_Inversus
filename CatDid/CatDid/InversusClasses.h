@@ -17,8 +17,8 @@ struct InversusContainer
 
 	InversusFramework* framework = nullptr;
 
-	Player player;
 	Map BlockMap;
+	std::vector<Player> player;
 	std::list<Bullet> bullets;
 	std::list<Enemy> enemys;
 	std::list<Explosion> explosionEffect;

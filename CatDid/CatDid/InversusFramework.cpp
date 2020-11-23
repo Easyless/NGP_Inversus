@@ -59,7 +59,7 @@ void InversusFramework::Draw(PaintInfo info)
 	container->BlockMap.Draw(info);
 	for (auto& bullet : container->bullets) { bullet.Draw(info); }
 	for (auto& enemy : container->enemys) { enemy.Draw(info); }
-	container->player.Draw(info);
+	for ( auto& p : container->player ) { p.Draw( info ); }
 	for (auto& effect : container->explosionEffect) { effect.Draw(info); }
 	for (auto& drop : container->dropBullets) { drop.Draw(info); }
 }

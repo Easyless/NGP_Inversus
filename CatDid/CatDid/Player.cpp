@@ -19,13 +19,19 @@ Player::Player(InversusFramework* framework)
 	this->transform.SetCheckMap("Enemy", true);
 }
 
-void Player::RefreshFromData( const GameSceneData& data )
+void Player::RefreshFromData( const GameSceneData& data, UINT index )
 {
-	this->state = data.playerState[0].isDead ? GenState::Off : GenState::On;
-	//this->transform.Position.x = 50;
-	//this->transform.Position.y = 50;
-	this->transform.Position.x = data.playerState[0].positionX;
-	this->transform.Position.y = data.playerState[0].positionY;
+	if ( !this->isActive  && !data.playerState[index].isDead )
+	{
+		this->Active();
+	}
+	else 
+	{
+		this->Deactive();
+	}
+	this->state = data.playerState[index].isDead ? GenState::Off : GenState::On;
+	this->transform.Position.x = data.playerState[index].positionX;
+	this->transform.Position.y = data.playerState[index].positionY;
 }
 
 void Player::Update(float deltaTime)

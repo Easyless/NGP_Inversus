@@ -34,6 +34,7 @@ LPCTSTR lpszWindowName = L"Inversus";
 constexpr size_t X_SIZE = 1000;
 constexpr size_t Y_SIZE = 820;
 
+//constexpr int interval = 16;
 constexpr int interval = 33;
 
 LRESULT CALLBACK wProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);

@@ -8,8 +8,12 @@
 #include "UIObject.h"
 
 InversusContainer::InversusContainer(InversusFramework* framework)
-	:framework(framework), BlockMap(framework, 21, 21, Vec2DF{40,40}), player(framework)
+	:framework( framework ), BlockMap( framework, 21, 21, Vec2DF{ 40,40 } )
 {
+	for ( size_t i = 0; i < 4; i++ )
+	{
+		this->player.emplace_back( framework );
+	}
 	this->UIObject.push_back(std::move(std::make_unique<UILifeObject>(this->framework)));
 	this->UIObject.push_back(std::move(std::make_unique<UIScoreObject>(this->framework)));
 }
@@ -111,7 +115,10 @@ Vec2DF InversusContainer::GetMargin() const
 void InversusContainer::Reset(Difficulty diff)
 {
 	this->BlockMap.Reset(diff);
-	this->player.Reset();
+	for ( auto& p : player )
+	{
+		p.Reset();
+	}
 	for (auto& effect : explosionEffect) { effect.Reset(); }
 	for (auto& bullet : bullets) { bullet.Reset(); }
 	for (auto& enemy : enemys) { enemy.Reset(); }

@@ -26,7 +26,7 @@ private:
 public:
 	GenState state = GenState::Off;
 	Player(InversusFramework* framework);
-	void RefreshFromData( const GameSceneData& data );
+	void RefreshFromData( const GameSceneData& data, UINT index );
 	virtual void Update(float deltaTime) override;
 	virtual void Draw(PaintInfo info) override;
 	virtual void Deactive() override;

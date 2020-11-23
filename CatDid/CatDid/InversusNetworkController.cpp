@@ -11,7 +11,10 @@ void InversusNetworkController::InitlizeWithSocket( ClientSocketManager* socket 
 	{
 		this->startGame = true;
 		this->framework->container->BlockMap.Reset();
-		this->framework->container->player.Active();
+		for ( auto& p : this->framework->container->player )
+		{
+			p.Active();
+		}
 	};
 	
 	this->socket->recvSceneDataFunction =
@@ -63,7 +66,10 @@ void InversusNetworkController::RecvData()
 
 void InversusNetworkController::RefreshPlayerData()
 {
-	this->framework->container->player.RefreshFromData( this->sceneData );
+	for ( size_t i = 0; i < 4; i++ )
+	{
+		this->framework->container->player[i].RefreshFromData( this->sceneData, i );
+	}
 }
 
 void InversusNetworkController::RefreshMapData()

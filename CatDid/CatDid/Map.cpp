@@ -93,10 +93,10 @@ void Block::Active()
 	if (this->state == BlockState::Off)
 	{
 		this->state = BlockState::BreakableOn; 
-		if (this->framework->container != nullptr && this->framework->container->player.state == GenState::On && this->framework->container->player.transform.CheckCollision(this->transform))
-		{
-			this->framework->container->player.Deactive();
-		}
+		//if (this->framework->container != nullptr && this->framework->container->player.state == GenState::On && this->framework->container->player.transform.CheckCollision(this->transform))
+		//{
+		//	this->framework->container->player.Deactive();
+		//}
 	}
 }
 void Block::Deactive() 

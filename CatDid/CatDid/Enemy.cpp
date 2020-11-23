@@ -30,9 +30,9 @@ void Enemy::Update(float deltaTime)
 		}
 		else if (state == GenState::On)
 		{
-			this->transform.Translate(
-				(this->framework->container->player.transform.Position - this->transform.Position).Nomal() * deltaTime * moveSpeed
-			);
+			//this->transform.Translate(
+			//	(this->framework->container->player.transform.Position - this->transform.Position).Nomal() * deltaTime * moveSpeed
+			//);
 			auto idx = this->framework->container->BlockMap.GetPositionIndex(this->transform.Position);
 			this->framework->container->BlockMap.GetBlock(idx.first, idx.second).Active();
 
