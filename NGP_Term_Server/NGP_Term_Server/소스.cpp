@@ -9,9 +9,9 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS // 최신 VC++ 컴파일 시 경고 방지
 
 #define SERVERPORT 15073
-#define FPS 30
-#define BULLET_SPEED 1
-#define PLAYER_SPEED 1
+#define FPS 60.f
+#define BULLET_SPEED 2
+#define PLAYER_SPEED 2
 
 struct Param {
 	SOCKET client_sock;
@@ -28,7 +28,7 @@ CRITICAL_SECTION cs;
 bool isConnect[MAX_PLAYER_LENGTH] = { false, false, false, false };
 bool isPlay = false;
 bool isStart = false;
-bool isSend = false;
+bool isSend[4] = { false, };
 
 SOCKET connectedSocket[4] = { NULL, NULL, NULL, NULL };
 WaitRoomData waitRoomData;
@@ -136,6 +136,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	
 	while (true) {
 		if (!isPlay || (isPlay && isSend)) {
+			isSend[threadnum] = false; // 업데이트 대기
 			// 데이터 송신 - 메세지 타입 및 사이즈
 			if (isPlay) {
 				sendmessage.type = MSG_SCENE_DATA;
@@ -262,7 +263,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				return 0;
 			}
 		}
-		isSend = false; // 업데이트 대기
+		
 	}
 
 
@@ -281,7 +282,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 	DWORD lastTime = timeGetTime();
 	DWORD currTime;
-	DWORD Delta = 0;
+	float Delta = 0;
 
 	float x, y;
 
@@ -301,7 +302,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 			currTime = timeGetTime();
 			Delta = (currTime - lastTime) * 0.001f;
 
-			if (Delta >= 1 / FPS) {
+			if (Delta >= 1.f / FPS) {
 				// move
 				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 				{
@@ -368,7 +369,11 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				//}
 
 				lastTime = currTime;
-				isSend = true; // 업데이트 후 메시지 전송
+				for (size_t i = 0; i < 4; i++)
+				{
+					isSend[i] = true; // 업데이트 후 메시지 전송
+				}
+				
 			}
 		}
 
