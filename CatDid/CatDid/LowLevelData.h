@@ -127,6 +127,7 @@ struct NetGameMessage
 	NetGameMessageType type;
 	UINT parameterSize; //뒤에 따라올 메시지 후속 정보의 크기 (갯수 * 구조체 사이즈)
 };
+#pragma pack()
 
 //Utill Function
 inline UINT GetMessageParameterSize( NetGameMessageType type )
@@ -147,7 +148,6 @@ inline UINT GetMessageParameterSize( NetGameMessageType type )
 	}
 }
 
-#pragma pack(0)
 
 #define TOSTRING(x) #x
 
@@ -166,6 +166,8 @@ inline const char* GetMessageString( NetGameMessageType type )
 	case MSG_BULLET_DATA: return TOSTRING( MSG_BULLET_DATA );
 	case MSG_MOB_DATA: return TOSTRING( MSG_MOB_DATA );
 	case MSG_PLAYER_INPUT: return TOSTRING( MSG_PLAYER_INPUT );
+	default:
+		return "MSG_ERROR_NOT_DEFINED";
 	}
 }
 

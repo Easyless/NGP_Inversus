@@ -117,6 +117,7 @@ void ClientSocketManager::SendPlayerInput( const PlayerInput& input )
 void ClientSocketManager::RecvProc()
 {
 	NetGameMessage messages;
+	ZeroMemory( &messages, sizeof( NetGameMessage ) );
 	int ret = ClientSocketManager::Recvn( this->clientSocket, (char*)&messages, sizeof( NetGameMessage ), 0 );
 	if ( ret == SOCKET_ERROR ) err_quit( "recvn()" );
 	std::cout << "Message Recv : " << GetMessageString( messages.type ) << " / paramSize : " << messages.parameterSize << std::endl;

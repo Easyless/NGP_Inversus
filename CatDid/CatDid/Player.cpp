@@ -217,7 +217,7 @@ void Player::Update( float deltaTime )
 
 void Player::Draw( PaintInfo info )
 {
-	if ( this->isRender )
+	//if ( this->isRender )
 	{
 		HPEN hPen;
 		HBRUSH hBrush;

@@ -34,12 +34,12 @@ struct NetworkGameVariable
 
 	inline void Use()
 	{
-		EnterCriticalSection( &cs );
+		::EnterCriticalSection( &cs );
 	}
 
 	inline void End()
 	{
-		LeaveCriticalSection( &cs );
+		::LeaveCriticalSection( &cs );
 	}
 };
 
