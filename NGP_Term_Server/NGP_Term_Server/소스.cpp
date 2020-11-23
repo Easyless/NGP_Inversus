@@ -3,15 +3,20 @@
 #include <stdio.h>
 #include <iostream>
 #include <list>
+#include <vector>
+#include <algorithm>
 #include "LowLevelData.h"
+
 #pragma comment(lib, "ws2_32")
 #pragma comment(lib, "winmm.lib")
 #define _WINSOCK_DEPRECATED_NO_WARNINGS // 최신 VC++ 컴파일 시 경고 방지
 
 #define SERVERPORT 15073
-#define FPS 60.f
-#define BULLET_SPEED 2
-#define PLAYER_SPEED 2
+#define FPS 30.f
+#define BULLET_SPEED 2.f
+#define PLAYER_SPEED 2.f
+#define WINDOWSIZEX 800
+#define WINDOWSIZEY 600
 
 struct Param {
 	SOCKET client_sock;
@@ -33,8 +38,8 @@ bool isSend[4] = { false, };
 SOCKET connectedSocket[4] = { NULL, NULL, NULL, NULL };
 WaitRoomData waitRoomData;
 GameSceneData gameSceneData;
-std::list<BulletData> bulletDatas;
-std::list<MobData> mobDatas;
+std::vector<BulletData> bulletDatas;
+std::vector<MobData> mobDatas;
 EventParameter eventParameter;
 PlayerInput playerInput[MAX_PLAYER_LENGTH];
 int connectedCount = 0;
@@ -44,9 +49,9 @@ void InitSceneData() {
 	gameSceneData.mapData = { false, };
 	for (size_t i = 0; i < 4; i++)
 	{
-		gameSceneData.playerState[i].positionX = i  * 50;
-		gameSceneData.playerState[i].positionY = (i + 1) * 30;
-		gameSceneData.playerState[i].isDead = false;
+		gameSceneData.playerState[i].positionX = i * 50;
+		gameSceneData.playerState[i].positionY = i * 30;
+		gameSceneData.playerState[i].isDead = true;
 	}
 }
 
@@ -107,6 +112,10 @@ void SendtoAll(NetGameMessage sendmessage) {
 				send(connectedSocket[i], (char*)&waitRoomData, sizeof(WaitRoomData), 0);
 				std::cout << "sendtoall waitroomdata" << std::endl;
 				break;
+			case MSG_BULLET_DATA:
+				send(connectedSocket[i], (char*)bulletDatas.data(), sizeof(BulletData) * bulletDatas.size(), 0);
+				std::cout << "sendtoall bulletdatas" << std::endl;
+				break;
 			default:
 				break;
 			}
@@ -133,7 +142,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	SendtoAll(sendmessage);
 
 	int readyCount = 0;
-	
+
 	while (true) {
 		if (!isPlay || (isPlay && isSend)) {
 			isSend[threadnum] = false; // 업데이트 대기
@@ -158,6 +167,11 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			case MSG_SCENE_DATA:
 				retval = send(client_sock, (char*)&gameSceneData, sizeof(GameSceneData), 0);
 				std::cout << "send scene data" << std::endl;
+				if (!bulletDatas.empty()) {
+					sendmessage.type = MSG_BULLET_DATA;
+					sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * bulletDatas.size();
+					SendtoAll(sendmessage);
+				}
 				break;
 			case MSG_BULLET_DATA:
 				break;
@@ -194,7 +208,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				// 메시지 수신 시 다음 메시지 정보 전송(대기 방 갱신)
 			case MSG_REQ_READY:
 				retval = recvn(client_sock, (char*)&receivemessage, datasize, 0);
-				
+
 				waitRoomData.playerWaitStates[threadnum] = WAIT_READY;
 				std::cout << "recv ready msg" << std::endl;
 				readyCount = 0;
@@ -263,7 +277,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				return 0;
 			}
 		}
-		
+
 	}
 
 
@@ -296,6 +310,12 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
 				SendtoAll(sendmessage);
 				isStart = false;
+				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
+				{
+					if (isConnect[i]) {
+						gameSceneData.playerState[i].isDead = false;
+					}
+				}
 			}
 
 			//Deltatime
@@ -303,27 +323,43 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 			Delta = (currTime - lastTime) * 0.001f;
 
 			if (Delta >= 1.f / FPS) {
+
+				// 플레이어
 				// move
 				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 				{
 					if (isConnect[i]) {
 						x = gameSceneData.playerState[i].positionX;
 						y = gameSceneData.playerState[i].positionY;
-						
-						if (playerInput[i].isPressedMoveUp) { y -= PLAYER_SPEED; }
-						if (playerInput[i].isPressedMoveDown) { y += PLAYER_SPEED; }
-						if (playerInput[i].isPressedMoveLeft) { x -= PLAYER_SPEED; }
-						if (playerInput[i].isPressedMoveRight) { x += PLAYER_SPEED; }
+
+						if (playerInput[i].isPressedMoveUp && y > PLAYER_SPEED) {
+							y -= PLAYER_SPEED;
+						}
+						if (playerInput[i].isPressedMoveDown && y < WINDOWSIZEY - PLAYER_SPEED) {
+							y += PLAYER_SPEED;
+						}
+						if (playerInput[i].isPressedMoveLeft && x > PLAYER_SPEED) {
+							x -= PLAYER_SPEED;
+						}
+						if (playerInput[i].isPressedMoveRight && x < WINDOWSIZEX - PLAYER_SPEED) {
+							x += PLAYER_SPEED;
+						}
 
 						gameSceneData.playerState[i].positionX = x;
 						gameSceneData.playerState[i].positionY = y;
 					}
 				}
 
-				// bullet
+				//	총알
+				//	메시지
+				//	충돌 - 몹 : 몹 폭발 및 총알 삭제
+				//	- 블럭 : 블럭 상태 변경 및 총알 삭제
+
 				if (!bulletDatas.empty()) {
-					for (auto b : bulletDatas)
+					for (auto& b : bulletDatas)
 					{
+						// 총알 생성 인풋에서
+						// 범위 벗어나면 총알 삭제
 						x = b.positionX;
 						y = b.positionY;
 						switch (b.shootDirection)
@@ -345,17 +381,32 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						}
 						b.positionX = x;
 						b.positionY = y;
+
+						//if (b.positionX < 0 || b.positionY < 0 ||
+						//	b.positionX > WINDOWSIZEX || b.positionY > WINDOWSIZEY) {
+						//	bulletDatas.erase(std::remove(bulletDatas.begin(), bulletDatas.end(), b));
+						//}
 					}
 				}
 
 
-					//BLOCK_SIZE_X
-					//BLOCK_SIZE_Y
-					//BULLET_SIZE_X
-					//BULLET_SIZE_Y
-					//PLAYER_SIZE_X
-					//PLAYER_SIZE_Y
-				
+				//BLOCK_SIZE_X
+				//BLOCK_SIZE_Y
+				//BULLET_SIZE_X
+				//BULLET_SIZE_Y
+				//PLAYER_SIZE_X
+				//PLAYER_SIZE_Y
+
+				//	몹
+				//	메시지
+				//	몹 위치의 블럭 막기
+				//	충돌 - 플레이어 : 플레이어 사망, 목숨 카운트 감소
+				//	- 총알 : 몹 삭제 및 폭발 이벤트
+
+				//	이동 - 각 플레이어 까지의 거리 계산 후 가까운 플레이어 위치로
+
+
+
 				//// mob
 				//for (auto m : mobDatas) {
 				//	// 포지션 / 사이즈 위치 블럭 true로 변경
@@ -375,12 +426,13 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				{
 					isSend[i] = true; // 업데이트 후 메시지 전송
 				}
-				
+
 			}
 		}
 
 		if (connectedCount == 0) {
 			isPlay = false;
+
 		}
 	}
 	return 0;
