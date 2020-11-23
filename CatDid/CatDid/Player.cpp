@@ -25,11 +25,7 @@ void Player::RefreshFromData( const GameSceneData& data, UINT index )
 	{
 		this->Active();
 	}
-	else 
-	{
-		this->Deactive();
-	}
-	this->state = data.playerState[index].isDead ? GenState::Off : GenState::On;
+	this->state = !data.playerState[index].isDead ? GenState::On : GenState::Off;
 	this->transform.Position.x = data.playerState[index].positionX;
 	this->transform.Position.y = data.playerState[index].positionY;
 }
