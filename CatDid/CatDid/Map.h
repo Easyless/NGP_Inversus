@@ -63,6 +63,7 @@ public:
 	virtual void Draw(PaintInfo info) override;
 	std::pair<size_t, size_t> GetSize() const;
 	Vec2DF GetBlockSize() const;
+	void Reset();
 	void Reset(Difficulty dif);
 	void RefreshFromData( const GameSceneData& data );
 };

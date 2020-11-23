@@ -10,6 +10,8 @@ void InversusNetworkController::InitlizeWithSocket( ClientSocketManager* socket 
 		[this]()
 	{
 		this->startGame = true;
+		this->framework->container->BlockMap.Reset();
+		this->framework->container->player.Active();
 	};
 	
 	this->socket->recvSceneDataFunction =
@@ -71,10 +73,10 @@ void InversusNetworkController::RefreshMapData()
 
 void InversusNetworkController::GetPlayerInput()
 {
-	input.isPressedMoveUp = GetAsyncKeyState( 'W' );
-	input.isPressedMoveLeft = GetAsyncKeyState( 'A' );
-	input.isPressedMoveRight = GetAsyncKeyState( 'D' );
-	input.isPressedMoveDown = GetAsyncKeyState( 'S' );
+	input.isPressedMoveUp = GetAsyncKeyState( 'W' ) ? true : false;
+	input.isPressedMoveLeft = GetAsyncKeyState( 'A' ) ? true : false;
+	input.isPressedMoveRight = GetAsyncKeyState( 'D' ) ? true : false;
+	input.isPressedMoveDown = GetAsyncKeyState( 'S' ) ? true : false;
 
 	//if ( GetAsyncKeyState( VK_UP ) )
 	//{

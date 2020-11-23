@@ -16,6 +16,8 @@
 #define MAP_SIZE_Y (BLOCK_COUNT_Y * BLOCK_SIZE_Y) //¥‹¿ß px, ∏  ¿¸√º «»ºø ≈©±‚
 #define SERVER_PORT 15073
 
+#pragma pack(1)
+
 enum NetGameMessageType : unsigned char
 {
 	MSG_MESSAGE_NULL = 0,
@@ -144,6 +146,8 @@ inline UINT GetMessageParameterSize( NetGameMessageType type )
 	case MSG_PLAYER_INPUT: return sizeof( PlayerInput );
 	}
 }
+
+#pragma pack(0)
 
 #define TOSTRING(x) #x
 

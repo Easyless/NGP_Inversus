@@ -33,6 +33,8 @@ void ClientSocketManager::CreateSocket()
 	{
 		err_quit( "socket()" );
 	}
+	BOOL optval = TRUE;
+	setsockopt( this->clientSocket, IPPROTO_TCP, TCP_NODELAY, (char*)&optval, sizeof( optval ) );
 }
 
 void ClientSocketManager::SetConnection( const char* ipaddr )
@@ -103,6 +105,12 @@ void ClientSocketManager::SendCancelReadyMsg()
 
 void ClientSocketManager::SendPlayerInput( const PlayerInput& input )
 {
+	std::cout << "Send Player Input : "
+		<< std::boolalpha << input.isPressedMoveUp << ","
+		<< std::boolalpha << input.isPressedMoveDown << ","
+		<< std::boolalpha << input.isPressedMoveLeft << ","
+		<< std::boolalpha << input.isPressedMoveRight
+		<< std::endl;
 	this->Send( NetGameMessageType::MSG_PLAYER_INPUT, 1, (void*)&input );
 }
 
@@ -121,7 +129,6 @@ void ClientSocketManager::RecvProc()
 	break;
 	case MSG_WAIT_ROOM_DATA:
 	{
-		std::cout << "Recv Wait Room Data" << std::endl;
 		this->variables.roomData.Use();
 		this->variables.roomData.isChange = true;
 		int ret = ClientSocketManager::Recvn( this->clientSocket, (char*)&this->variables.roomData.data, messages.parameterSize, 0 );
@@ -172,6 +179,9 @@ void ClientSocketManager::RecvProc()
 		this->variables.sceneData.Use();
 		this->variables.sceneData.isChange = true;
 		int ret = ClientSocketManager::Recvn( this->clientSocket, (char*)&this->variables.sceneData.data, messages.parameterSize, 0 );
+		std::cout << "Scene Data : "
+			<< this->variables.sceneData.data.playerState[0].positionX << ", " << this->variables.sceneData.data.playerState[0].positionY
+			<< std::endl;
 		if ( ret == SOCKET_ERROR ) err_quit( "recvn()" );
 		this->variables.sceneData.End();
 	}
@@ -378,6 +388,7 @@ void err_msg_quit( const char* msg )
 	std::string buf( msg );
 	std::wstring buff( buf.begin(), buf.end() );
 	MessageBox( NULL, buff.c_str(), L"", MB_ICONERROR );
+	assert( false );
 }
 
 

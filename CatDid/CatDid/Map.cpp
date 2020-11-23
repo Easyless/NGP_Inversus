@@ -114,6 +114,21 @@ Vec2DF Map::GetBlockSize() const
 	return blockSize; 
 }
 
+void Map::Reset()
+{
+	for ( int y = 0; y < sizeY; y++ )
+	{
+		for ( int x = 0; x < sizeX; x++ )
+		{
+			auto& target = map[y * sizeX + x];
+			target.Deactive();
+			target.Active();
+			target.transform.Size = blockSize;
+			target.transform.Position = Vec2DF( target.transform.Size.x * x + target.transform.Size.x / 2, target.transform.Size.y * y + target.transform.Size.y / 2 );
+		}
+	}
+}
+
 void Map::Reset(Difficulty dif)
 {
 	switch (dif)

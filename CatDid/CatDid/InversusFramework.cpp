@@ -49,7 +49,7 @@ void InversusFramework::Update(float deltaTime)
 	//for (auto& bullet : container->bullets) { bullet.Update(deltaTime); }
 	//for (auto& enemy : container->enemys) { enemy.Update(deltaTime); }
 	//for (auto& drop : container->dropBullets) { drop.Update(deltaTime); }
-	//container->BlockMap.Update(deltaTime);
+	container->BlockMap.Update(deltaTime);
 	this->menu->Update(deltaTime);
 
 }

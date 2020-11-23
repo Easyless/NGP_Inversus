@@ -23,7 +23,7 @@
 #endif
 
 
-#define PEEKMESSAGE
+//#define PEEKMESSAGE
 
 #define UM_TIMER 5124124
 
@@ -34,7 +34,7 @@ LPCTSTR lpszWindowName = L"Inversus";
 constexpr size_t X_SIZE = 1000;
 constexpr size_t Y_SIZE = 820;
 
-constexpr int interval = 1000;
+constexpr int interval = 33;
 
 LRESULT CALLBACK wProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 

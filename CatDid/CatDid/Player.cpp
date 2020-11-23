@@ -21,8 +21,11 @@ Player::Player(InversusFramework* framework)
 
 void Player::RefreshFromData( const GameSceneData& data )
 {
+	this->state = data.playerState[0].isDead ? GenState::Off : GenState::On;
+	//this->transform.Position.x = 50;
+	//this->transform.Position.y = 50;
 	this->transform.Position.x = data.playerState[0].positionX;
-	this->transform.Position.x = data.playerState[0].positionY;
+	this->transform.Position.y = data.playerState[0].positionY;
 }
 
 void Player::Update(float deltaTime)
