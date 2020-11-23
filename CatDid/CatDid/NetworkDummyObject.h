@@ -1,31 +1,35 @@
 #pragma once
 #include <string>
-#include "IFrameworkObject.h"
 #include "InversusFramework.h"
 #include "PaintInfo.h"
 #include "Transform.h"
 
-using Tag = std::string;
-
-class InversusFramework;
-
-class NetworkDummyObject : public IFrameworkObject
+class BaseObject
 {
-private:
 protected:
-	bool isActive = false;
+	bool isRender = true;
 public:
 	Transform transform;
-	NetworkDummyObject( InversusFramework* framework )
-		: IFrameworkObject( framework ), transform( *this, framework ) {};
-	virtual ~GameObject() = default;
-	virtual void Update( float deltaTime ) = 0;
+	BaseObject() = default;
+	virtual ~BaseObject() = default;
+	virtual void Update( float deltaTime ) {};
 	virtual void Draw( PaintInfo info ) = 0;
-	virtual void Destory() { this->isDestroy = true; };
-	virtual void Active() { this->isActive = true; };
-	virtual void Deactive() { this->isActive = false; };
-	virtual bool GetActiveState() const { return this->isActive; }
-	virtual void Reset() {};
-	//true == StopMove, false == Moving
-	virtual bool isCollision( GameObject& other ) { return false; };
+};
+
+template <typename DataType>
+class RefreshObject : public BaseObject
+{
+public:
+	RefreshObject() = default;
+	virtual void RefreshFromData( const DataType& data ) = 0;
+};
+
+class ClientObject : public BaseObject
+{
+protected:
+	bool isDestroy = false;
+public:
+	ClientObject() = default;
+	void Destroy();
+	bool IsDestroy() const;
 };

@@ -1,9 +1,9 @@
 #pragma once
-#include "GameObject.h"
 #include "InversusEnum.h"
+#include "NetworkDummyObject.h"
 #include "ClientSocketManager.h"
 
-class Player : public GameObject
+class Player : public RefreshObject<GameSceneData>
 {
 	static constexpr float speedNumber = 200;
 	static constexpr float rotateSpeed = 200.0f;
@@ -12,31 +12,15 @@ class Player : public GameObject
 	static constexpr float SpecialMaxDelay = 0.25;
 	static constexpr float bulletRegenDelay = 1.5f;
 private:
-	int SpecialBulletCount = 0;
 	int BulletCount = 0;
 	int life = 0;
 	float bulletRotate = 0;
-	float regenTime = 0;
 	float CharginCount = 0.0f;
-	float SpecialDelay = 0.0f;
-	float SpecialCharging = false;
-	bool firstGen = true;
-	bool invulnerable = false;
-	int playerIndex = 0;
-	Vec2DF curCharging;
+	float regenTime = 0.0f;
+	UINT playerIndex;
 public:
-	GenState state = GenState::Off;
-	Player(InversusFramework* framework);
-	void RefreshFromData( const GameSceneData& data, UINT index );
-	virtual void Update(float deltaTime) override;
+	Player(UINT index);
+	virtual void RefreshFromData( const GameSceneData& data) override;
+	virtual void Update( float deltaTime ) override;
 	virtual void Draw(PaintInfo info) override;
-	virtual void Deactive() override;
-	virtual bool GetActiveState() const override;
-	virtual void Reset() override;
-	void Regen();
-	void AddSpecialBullet(int count);
-	void OnInvulnerable();
-	void OffInvulnerable();
-	bool GetInvulnerable() const;
-	bool SwtichInvulnerable();
 };

@@ -37,7 +37,10 @@
     <Filter Include="헤더 파일\Inversus\Object">
       <UniqueIdentifier>{6a72aed4-8fb3-485c-991d-7fa450a8b171}</UniqueIdentifier>
     </Filter>
-    <Filter Include="헤더 파일\Sever-Communication">
+    <Filter Include="헤더 파일\Network">
+      <UniqueIdentifier>{d2a91ab5-b555-4950-bdf6-a505a1385bd7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Network\Sever-Communication">
       <UniqueIdentifier>{87902195-84c6-4c38-b419-5f609d3aa9bb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -63,9 +66,6 @@
     <ClInclude Include="CatFrameWork.h">
       <Filter>헤더 파일\Framework</Filter>
     </ClInclude>
-    <ClInclude Include="GameObject.h">
-      <Filter>헤더 파일\Framework</Filter>
-    </ClInclude>
     <ClInclude Include="PaintInfo.h">
       <Filter>헤더 파일\Framework\Draw</Filter>
     </ClInclude>
@@ -76,9 +76,6 @@
       <Filter>헤더 파일\Inversus</Filter>
     </ClInclude>
     <ClInclude Include="InversusFramework.h">
-      <Filter>헤더 파일\Inversus</Filter>
-    </ClInclude>
-    <ClInclude Include="InversusConst.h">
       <Filter>헤더 파일\Inversus</Filter>
     </ClInclude>
     <ClInclude Include="UtillFunction.h">
@@ -105,26 +102,23 @@
     <ClInclude Include="Player.h">
       <Filter>헤더 파일\Inversus\Object</Filter>
     </ClInclude>
-    <ClInclude Include="DropBullet.h">
-      <Filter>헤더 파일\Inversus\Object</Filter>
-    </ClInclude>
     <ClInclude Include="UIObject.h">
       <Filter>헤더 파일\Inversus\Object</Filter>
     </ClInclude>
     <ClInclude Include="InversusMenu.h">
       <Filter>헤더 파일\Inversus</Filter>
     </ClInclude>
-    <ClInclude Include="Difficulty.h">
-      <Filter>헤더 파일\Inversus</Filter>
-    </ClInclude>
     <ClInclude Include="LowLevelData.h">
-      <Filter>헤더 파일\Sever-Communication</Filter>
-    </ClInclude>
-    <ClInclude Include="ClientSocketManager.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Network\Sever-Communication</Filter>
     </ClInclude>
     <ClInclude Include="InversusNetworkController.h">
       <Filter>헤더 파일\Inversus</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkDummyObject.h">
+      <Filter>헤더 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientSocketManager.h">
+      <Filter>헤더 파일\Network</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -167,9 +161,6 @@
     <ClCompile Include="Explosion.cpp">
       <Filter>소스 파일\Inversus</Filter>
     </ClCompile>
-    <ClCompile Include="DropBullet.cpp">
-      <Filter>소스 파일\Inversus</Filter>
-    </ClCompile>
     <ClCompile Include="InversusController.cpp">
       <Filter>소스 파일\Inversus</Filter>
     </ClCompile>
@@ -186,6 +177,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="InversusNetworkController.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="NetworkDummyObject.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

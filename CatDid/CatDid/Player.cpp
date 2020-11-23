@@ -4,34 +4,24 @@
 #include "Rect.h"
 #include "CatFrameWork.h"
 #include "InversusFramework.h"
-#include "GameObject.h"
 #include "Player.h"
 #include "InversusClasses.h"
 
 
-Player::Player(InversusFramework* framework)
-	:GameObject(framework, "Player")
+Player::Player( UINT index )
 {
-	this->transform.Size = Vec2DF{ 25,25 };
-	this->transform.SetCheckMap("Block", true);
-	this->transform.SetCheckMap("Explosion", true);
-	this->transform.SetCheckMap("DropBullet", true);
-	this->transform.SetCheckMap("Enemy", true);
-}
-
-void Player::RefreshFromData( const GameSceneData& data, UINT index )
-{
-	if ( !this->isActive  && !data.playerState[index].isDead )
-	{
-		this->Active();
-	}
-	this->state = !data.playerState[index].isDead ? GenState::On : GenState::Off;
-	this->transform.Position.x = data.playerState[index].positionX;
-	this->transform.Position.y = data.playerState[index].positionY;
 	this->playerIndex = index;
+	this->transform.Size = Vec2DF{ 25,25 };
 }
 
-void Player::Update(float deltaTime)
+void Player::RefreshFromData( const GameSceneData& data )
+{
+	this->isRender = !data.playerState[playerIndex].isDead;
+	this->transform.Position.x = data.playerState[playerIndex].positionX;
+	this->transform.Position.y = data.playerState[playerIndex].positionY;
+}
+
+void Player::Update( float deltaTime )
 {
 	//if (this->framework->GetPauseSate())
 	//{
@@ -225,161 +215,60 @@ void Player::Update(float deltaTime)
 
 }
 
-void Player::Draw(PaintInfo info)
+void Player::Draw( PaintInfo info )
 {
-	if (this->state == GenState::Gen)
-	{
-		COLORREF color = RGB(0, 0, 0);
-		HPEN hPen = CreatePen(PS_SOLID, 5, color);
-		auto oldPen = (HPEN)SelectObject(info.hdc, hPen);
-		auto oldBrush = (HBRUSH)SelectObject(info.hdc, GetStockObject(NULL_BRUSH));
-		auto rt = RectF(this->transform.Position * info.AntiAliasing, (1 + CharginCount) * this->transform.Size.x * info.AntiAliasing, (1 + CharginCount) * this->transform.Size.y * info.AntiAliasing) + info.margin;
-		SetBkMode(info.hdc, TRANSPARENT);
-		RoundRect(info.hdc, rt.left, rt.top, rt.right, rt.bottom, 10, 10);
-		SetBkMode(info.hdc, OPAQUE);
-		SelectObject(info.hdc, oldPen);
-		DeleteObject(hPen);
-		SelectObject(info.hdc, oldBrush);
-
-	}
-	else if (this->state == GenState::On)
+	if ( this->isRender )
 	{
 		HPEN hPen;
 		HBRUSH hBrush;
 		COLORREF playerColor[4] = { RGB( 169, 14, 21 ) ,RGB( 0, 183, 0 ) ,RGB( 0, 75, 151 ) ,RGB( 0, 0, 0 ) };
-		hPen = CreatePen(PS_SOLID, 7, playerColor[this->playerIndex]);
+		hPen = CreatePen( PS_SOLID, 7, playerColor[this->playerIndex] );
 		hBrush = CreateSolidBrush( playerColor[this->playerIndex] );
-		auto oldPen = (HPEN)SelectObject(info.hdc, hPen);
-		auto oldBrush = (HBRUSH)SelectObject(info.hdc, hBrush);
-		auto rt = RectF(this->transform.Position * info.AntiAliasing, this->transform.Size.x * info.AntiAliasing, this->transform.Size.y * info.AntiAliasing) + info.margin;
-		RoundRect(info.hdc, rt.left, rt.top, rt.right, rt.bottom, 20, 20);
-		Ellipse(info.hdc, rt.left, rt.top, rt.right, rt.bottom);
+		auto oldPen = (HPEN)SelectObject( info.hdc, hPen );
+		auto oldBrush = (HBRUSH)SelectObject( info.hdc, hBrush );
+		auto rt = RectF( this->transform.Position * info.AntiAliasing, this->transform.Size.x * info.AntiAliasing, this->transform.Size.y * info.AntiAliasing ) + info.margin;
+		RoundRect( info.hdc, rt.left, rt.top, rt.right, rt.bottom, 20, 20 );
+		Ellipse( info.hdc, rt.left, rt.top, rt.right, rt.bottom );
 
 		size_t i = 0;
-		for (i = 0; i < min(BulletCount + SpecialBulletCount, 6); i++)
+		for ( i = 0; i < min( BulletCount, 6 ); i++ )
 		{
-			COLORREF color = RGB(255, 255, 255);
-			if (i < SpecialBulletCount)
+			COLORREF color = RGB( 255, 255, 255 );
+			if ( i == 0 && CharginCount > maxCharge )
 			{
-				color = RGB(56, 182, 214);
+				color = RGB( 255, 0, 0 );
 			}
-			if (i == 0 && CharginCount > maxCharge)
-			{
-				color = RGB(255, 0, 0);
-			}
-			HPEN hBulletPen = CreatePen(PS_SOLID, 1, color);
-			auto oldBulletPen = (HPEN)SelectObject(info.hdc, hBulletPen);
-			HBRUSH hBulletBrush = CreateSolidBrush(color);
-			auto oldBulletBrush = (HBRUSH)SelectObject(info.hdc, hBulletBrush);
-			auto bulletPos = (this->transform.Position + Vec2DF{ 0,10 }).RotatedPoint(this->transform.Position, i * 60 + bulletRotate);
-			auto bulletRt = RectF(bulletPos * info.AntiAliasing, this->transform.Size.x * 0.2 * info.AntiAliasing, this->transform.Size.y * 0.2 * info.AntiAliasing) + info.margin;
-			Ellipse(info.hdc, bulletRt.left, bulletRt.top, bulletRt.right, bulletRt.bottom);
-			SelectObject(info.hdc, oldBulletBrush);
-			SelectObject(info.hdc, oldBulletPen);
-			DeleteObject(hBulletBrush);
-			DeleteObject(hBulletPen);
+			HPEN hBulletPen = CreatePen( PS_SOLID, 1, color );
+			auto oldBulletPen = (HPEN)SelectObject( info.hdc, hBulletPen );
+			HBRUSH hBulletBrush = CreateSolidBrush( color );
+			auto oldBulletBrush = (HBRUSH)SelectObject( info.hdc, hBulletBrush );
+			auto bulletPos = (this->transform.Position + Vec2DF{ 0,10 }).RotatedPoint( this->transform.Position, i * 60 + bulletRotate );
+			auto bulletRt = RectF( bulletPos * info.AntiAliasing, this->transform.Size.x * 0.2 * info.AntiAliasing, this->transform.Size.y * 0.2 * info.AntiAliasing ) + info.margin;
+			Ellipse( info.hdc, bulletRt.left, bulletRt.top, bulletRt.right, bulletRt.bottom );
+			SelectObject( info.hdc, oldBulletBrush );
+			SelectObject( info.hdc, oldBulletPen );
+			DeleteObject( hBulletBrush );
+			DeleteObject( hBulletPen );
 		}
-		if (i < 6)
+		if ( i < 6 )
 		{
-			COLORREF color = RGB(255 * this->regenTime / bulletRegenDelay, 255 * this->regenTime / bulletRegenDelay, 255 * this->regenTime / bulletRegenDelay);
-			HPEN hBulletPen = CreatePen(PS_SOLID, 1, color);
-			auto oldBulletPen = (HPEN)SelectObject(info.hdc, hBulletPen);
-			HBRUSH hBulletBrush = CreateSolidBrush(color);
-			auto oldBulletBrush = (HBRUSH)SelectObject(info.hdc, hBulletBrush);
-			auto bulletPos = (this->transform.Position + Vec2DF{ 0,10 }).RotatedPoint(this->transform.Position, (i) * 60 + bulletRotate);
-			auto bulletRt = RectF(bulletPos * info.AntiAliasing, this->transform.Size.x * 0.2 * info.AntiAliasing, this->transform.Size.y * 0.2 * info.AntiAliasing) + info.margin;
-			Ellipse(info.hdc, bulletRt.left, bulletRt.top, bulletRt.right, bulletRt.bottom);
-			SelectObject(info.hdc, oldBulletBrush);
-			SelectObject(info.hdc, oldBulletPen);
-			DeleteObject(hBulletBrush);
-			DeleteObject(hBulletPen);
+			COLORREF color = RGB( 255 * this->regenTime / bulletRegenDelay, 255 * this->regenTime / bulletRegenDelay, 255 * this->regenTime / bulletRegenDelay );
+			HPEN hBulletPen = CreatePen( PS_SOLID, 1, color );
+			auto oldBulletPen = (HPEN)SelectObject( info.hdc, hBulletPen );
+			HBRUSH hBulletBrush = CreateSolidBrush( color );
+			auto oldBulletBrush = (HBRUSH)SelectObject( info.hdc, hBulletBrush );
+			auto bulletPos = (this->transform.Position + Vec2DF{ 0,10 }).RotatedPoint( this->transform.Position, (i) * 60 + bulletRotate );
+			auto bulletRt = RectF( bulletPos * info.AntiAliasing, this->transform.Size.x * 0.2 * info.AntiAliasing, this->transform.Size.y * 0.2 * info.AntiAliasing ) + info.margin;
+			Ellipse( info.hdc, bulletRt.left, bulletRt.top, bulletRt.right, bulletRt.bottom );
+			SelectObject( info.hdc, oldBulletBrush );
+			SelectObject( info.hdc, oldBulletPen );
+			DeleteObject( hBulletBrush );
+			DeleteObject( hBulletPen );
 		}
 
-		SelectObject(info.hdc, oldPen);
-		SelectObject(info.hdc, oldBrush);
-		DeleteObject(hBrush);
-		DeleteObject(hPen);
+		SelectObject( info.hdc, oldPen );
+		SelectObject( info.hdc, oldBrush );
+		DeleteObject( hBrush );
+		DeleteObject( hPen );
 	}
-}
-void Player::Deactive()
-{
-	if (!this->invulnerable)
-	{
-		GameObject::Deactive();
-		this->state = GenState::Off;
-		//this->framework->controller->PostPlayerDead();
-		this->framework->container->ActiveExplosion(this->transform.Position, RGB(0, 0, 0), false);
-	}
-}
-bool Player::GetActiveState() const
-{
-	return this->state == GenState::On && this->isActive;
-}
-void Player::Reset()
-{
-	CharginCount = 10.0f;
-	SpecialBulletCount = 0;
-	BulletCount = 0;
-	life = 0;
-	bulletRotate = 0;
-	regenTime = 0;
-	SpecialDelay = 0.0f;
-	SpecialCharging = false;
-	GameObject::Deactive();
-	this->state = GenState::Off;
-	firstGen = true;
-}
-void Player::Regen()
-{
-	this->state = GenState::Gen;
-	this->Active();
-	CharginCount = 10.0f;
-	SpecialBulletCount = 0;
-	BulletCount = 0;
-	life = 0;
-	bulletRotate = 0;
-	regenTime = 0;
-	SpecialDelay = 0.0f;
-	SpecialCharging = false;
-	if (!firstGen)
-	{
-		this->framework->container->ActiveExplosion(this->transform.Position, RGB(0, 0, 0));
-	}
-	else
-	{
-		this->transform.Position = (this->framework->GetDisplaySize() / 2) + Vec2DF{ 40.0f,40.0f };
-	}
-	firstGen = false;
-}
-
-void Player::AddSpecialBullet(int count)
-{
-	this->SpecialBulletCount += count;
-}
-
-void Player::OnInvulnerable()
-{
-	this->invulnerable = true;
-}
-
-void Player::OffInvulnerable()
-{
-	this->invulnerable = false;
-}
-bool Player::GetInvulnerable() const
-{
-	return this->invulnerable;
-}
-
-bool Player::SwtichInvulnerable()
-{
-	if (this->invulnerable)
-	{
-		this->invulnerable = false;
-	}
-	else
-	{
-		this->invulnerable = true;
-	}
-	return this->invulnerable;
 }

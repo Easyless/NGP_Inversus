@@ -153,20 +153,17 @@
     <ClInclude Include="CatDid.h" />
     <ClInclude Include="CatFrameWork.h" />
     <ClInclude Include="ClientSocketManager.h" />
-    <ClInclude Include="Difficulty.h" />
-    <ClInclude Include="DropBullet.h" />
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="Explosion.h" />
-    <ClInclude Include="GameObject.h" />
     <ClInclude Include="IFrameworkObject.h" />
     <ClInclude Include="InversusClasses.h" />
-    <ClInclude Include="InversusConst.h" />
     <ClInclude Include="InversusEnum.h" />
     <ClInclude Include="InversusFramework.h" />
     <ClInclude Include="InversusMenu.h" />
     <ClInclude Include="InversusNetworkController.h" />
     <ClInclude Include="LowLevelData.h" />
     <ClInclude Include="Map.h" />
+    <ClInclude Include="NetworkDummyObject.h" />
     <ClInclude Include="PaintInfo.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="Rect.h" />
@@ -180,7 +177,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClientSocketManager.cpp" />
-    <ClCompile Include="DropBullet.cpp" />
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="Explosion.cpp" />
     <ClCompile Include="InversusClasses.cpp" />
@@ -192,6 +188,7 @@
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="Bullet.cpp" />
     <ClCompile Include="CatDid.cpp" />
+    <ClCompile Include="NetworkDummyObject.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

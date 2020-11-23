@@ -1,30 +1,22 @@
 #pragma once
 #include <vector>
-#include "GameObject.h"
+#include "NetworkDummyObject.h"
 #include "InversusEnum.h"
 
-class UILifeObject : public GameObject
+class UILifeObject : public RefreshObject<int>
 {
 public:
-	UILifeObject(InversusFramework* framework);
+	UILifeObject();
+	virtual void RefreshFromData( const int& data );
 	virtual void Update(float deltaTime);
 	virtual void Draw(PaintInfo info);
-	virtual void Destory() { this->isDestroy = true; };
-	virtual void Active() { this->isActive = true; };
-	virtual void Deactive() { this->isActive = false; };
-	virtual bool GetActiveState() const { return this->isActive; }
-	//true == StopMove, false == Moving
 };
 
-class UIScoreObject : public GameObject
+class UIScoreObject : public RefreshObject<int>
 {
 public:
-	UIScoreObject(InversusFramework* framework);
+	UIScoreObject();
+	virtual void RefreshFromData( const int& data );
 	virtual void Update(float deltaTime);
 	virtual void Draw(PaintInfo info);
-	virtual void Destory() { this->isDestroy = true; };
-	virtual void Active() { this->isActive = true; };
-	virtual void Deactive() { this->isActive = false; };
-	virtual bool GetActiveState() const { return this->isActive; }
-	//true == StopMove, false == Moving
 };

@@ -2,7 +2,6 @@
 #pragma once
 #include <list>
 #include <memory>
-#include "GameObject.h"
 
 #include "ClientSocketManager.h"
 #include "Map.h"
@@ -10,7 +9,6 @@
 #include "Player.h"
 #include "Bullet.h"
 #include "Explosion.h"
-#include "DropBullet.h"
 
 
 struct InversusNetworkController

@@ -4,16 +4,14 @@
 #include "CatFrameWork.h"
 #include "InversusFramework.h"
 #include "InversusClasses.h"
-#include "GameObject.h"
 #include "InversusMenu.h"
 #include <array>
 #include "ClientSocketManager.h"
+#include "InversusNetworkController.h"
 #pragma comment(lib,"msimg32")
-InversusFramework* InversusFramework::instance = nullptr;
-
 
 InversusFramework::InversusFramework()
-	:menu(new InversusMenu(this)),container(new InversusContainer(this)), controller(new InversusNetworkController(this))
+	:menu(new InversusMenu(this)),container(new InversusContainer()), controller(new InversusNetworkController(this))
 {
 
 }
@@ -44,13 +42,11 @@ void InversusFramework::Create()
 void InversusFramework::Update(float deltaTime)
 {
 	this->controller->Update(deltaTime);
-	//container->player.Update(deltaTime);
-	//for (auto& effect : container->explosionEffect) { effect.Update(deltaTime); }
-	//for (auto& bullet : container->bullets) { bullet.Update(deltaTime); }
-	//for (auto& enemy : container->enemys) { enemy.Update(deltaTime); }
-	//for (auto& drop : container->dropBullets) { drop.Update(deltaTime); }
+	for (auto& effect : container->explosionEffect) { effect.Update(deltaTime); }
+	for (auto& bullet : container->bullets) { bullet.Update(deltaTime); }
 	container->BlockMap.Update(deltaTime);
 	this->menu->Update(deltaTime);
+	container->CollectGarbage();
 
 }
 
@@ -61,7 +57,6 @@ void InversusFramework::Draw(PaintInfo info)
 	for (auto& enemy : container->enemys) { enemy.Draw(info); }
 	for ( auto& p : container->player ) { p.Draw( info ); }
 	for (auto& effect : container->explosionEffect) { effect.Draw(info); }
-	for (auto& drop : container->dropBullets) { drop.Draw(info); }
 }
 
 void InversusFramework::UIDraw(PaintInfo info)
@@ -89,4 +84,10 @@ Vec2DF InversusFramework::GetMargin() const
 void InversusFramework::MouseInput(Vec2DU MousePos, UINT iMessage)
 {
 	this->menu->MouseInput(MousePos, iMessage);
+}
+
+InversusFramework* InversusFramework::GetInstance()
+{
+	static InversusFramework framework;
+	return &framework;
 }

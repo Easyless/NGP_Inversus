@@ -10,11 +10,6 @@ void InversusNetworkController::InitlizeWithSocket( ClientSocketManager* socket 
 		[this]()
 	{
 		this->startGame = true;
-		this->framework->container->BlockMap.Reset();
-		for ( auto& p : this->framework->container->player )
-		{
-			p.Active();
-		}
 	};
 	
 	this->socket->recvSceneDataFunction =
@@ -25,11 +20,24 @@ void InversusNetworkController::InitlizeWithSocket( ClientSocketManager* socket 
 	this->socket->recvMobDataFunction =
 		[this]( const MobDatas& datas )
 	{
+		this->mobData = datas;
 	};
 	this->socket->recvBulletDataFunction =
 		[this]( const BulletDatas& datas )
 	{
 		this->bulletData = datas;
+	};
+	this->socket->recvGameEndFunction =
+		[]()
+	{
+	};
+	this->socket->recvEventExplosionFunction =
+		[](const EventDatas& datas)
+	{
+	};
+	this->socket->recvEventSpawnFunction =
+		[]( const EventDatas& datas )
+	{
 	};
 }
 
@@ -67,10 +75,7 @@ void InversusNetworkController::RecvData()
 
 void InversusNetworkController::RefreshPlayerData()
 {
-	for ( size_t i = 0; i < 4; i++ )
-	{
-		this->framework->container->player[i].RefreshFromData( this->sceneData, i );
-	}
+	this->framework->container->RefreshPlayersFromData( this->sceneData );
 }
 
 Vec2DF GetShootDirection( PlayerShootType type )
@@ -101,11 +106,12 @@ void InversusNetworkController::RefreshBulletData()
 
 void InversusNetworkController::RefreshMapData()
 {
-	this->framework->container->BlockMap.RefreshFromData(this->sceneData);
+	this->framework->container->RefreshMapFromData( this->sceneData );
 }
 
 void InversusNetworkController::RefreshMobData()
 {
+	this->framework->container->RefreshEnemyFromData( this->mobData);
 }
 
 void InversusNetworkController::GetPlayerInput()

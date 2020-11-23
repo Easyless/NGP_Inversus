@@ -2,7 +2,6 @@
 #include "InversusMenu.h"
 #include "InversusFramework.h"
 #include "InversusClasses.h"
-#include "Difficulty.h"
 #include <string>
 #include <sstream>
 #include "ClientSocketManager.h"

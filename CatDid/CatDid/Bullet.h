@@ -1,6 +1,6 @@
 #pragma once
-#include "GameObject.h"
-class Bullet : public GameObject
+#include "NetworkDummyObject.h"
+class Bullet : public ClientObject
 {
 	static constexpr float MoveSpeed = 500.0f;
 	static constexpr float SpecialMoveSpeed = 600.0f;
@@ -16,13 +16,8 @@ private:
 	Vec2DF StartPosition;
 	bool isSpecial = false;
 public:
-	Bullet(InversusFramework* framework);
+	Bullet(Vec2DF position, Vec2DF MoveVector );
 	virtual void Update(float deltaTime) override;
 	virtual void Draw(PaintInfo info) override;
-	virtual bool isCollision(GameObject& other) override;
-	virtual void Active() { GameObject::Active();};
-	virtual void Deactive() { GameObject::Deactive(); };
-	virtual void Reset() override;
-	void TurnActive(Vec2DF position, Vec2DF MoveVector, bool isSpecial = false);
 };
 

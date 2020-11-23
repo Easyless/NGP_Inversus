@@ -1,14 +1,13 @@
 #pragma once
 #include "PaintInfo.h"
-#include "GameObject.h"
 #include "ClientSocketManager.h"
-#include "InversusNetworkController.h"
 #include <vector>
 
 
 class InversusContainer;
 class InversusController;
 class InversusMenu;
+class InversusNetworkController;
 class InversusFramework
 {
 private:
@@ -21,7 +20,6 @@ public:
 	InversusNetworkController* controller = nullptr;
 	InversusFramework();
 	~InversusFramework();
-	static InversusFramework* instance;
 	void MenuStart();
 	void Start();
 	void Create();
@@ -34,4 +32,5 @@ public:
 	void MouseInput(Vec2DU MousePos, UINT iMessage);
 	bool GetPauseSate() const { return isPause; }
 	void SetPauseSate(bool pause) { isPause = pause; }
+	static InversusFramework* GetInstance();
 };

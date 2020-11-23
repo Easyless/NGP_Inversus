@@ -2,101 +2,80 @@
 #include "Vec2D.h"
 #include "Rect.h"
 #include "CatFrameWork.h"
-#include "GameObject.h"
 #include "InversusClasses.h"
 #include "InversusFramework.h"
 #include "UIObject.h"
 
-InversusContainer::InversusContainer(InversusFramework* framework)
-	:framework( framework ), BlockMap( framework, 21, 21, Vec2DF{ 40,40 } )
+InversusContainer::InversusContainer()
+	:BlockMap(21, 21, Vec2DF{ 40,40 } )
 {
 	for ( size_t i = 0; i < 4; i++ )
 	{
-		this->player.emplace_back( framework );
+		this->player.emplace_back( i );
 	}
-	this->UIObject.push_back(std::move(std::make_unique<UILifeObject>(this->framework)));
-	this->UIObject.push_back(std::move(std::make_unique<UIScoreObject>(this->framework)));
+	this->UIObject.push_back(std::move(std::make_unique<UILifeObject>()));
+	this->UIObject.push_back(std::move(std::make_unique<UIScoreObject>()));
 }
 void InversusContainer::Start()
 {
 }
 void InversusContainer::AddBullet(Vec2DF position, Vec2DF moveVec, bool isSpecial)
 {
-	bool haveToCreate = true;
-	for (auto& bullet : bullets)
-	{
-		if (bullet.GetActiveState() == false)
-		{
-			bullet.TurnActive(position,moveVec, isSpecial);
-			haveToCreate = false;
-			break;
-		}
-	}
-	if (haveToCreate)
-	{
-		bullets.emplace_back(this->framework);
-		bullets.back().TurnActive(position, moveVec, isSpecial);
-	}
-}
-void InversusContainer::AddEnemy(Vec2DF Position, bool isSpecial)
-{
-	bool haveToCreate = true;
-	for (auto& enemy : enemys)
-	{
-		if (enemy.state == GenState::Off)
-		{
-			enemy.TurnActive(Position, isSpecial);
-			haveToCreate = false;
-			break;
-		}
-	}
-	if (haveToCreate)
-	{
-		enemys.emplace_back(this->framework);
-		enemys.back().TurnActive(Position, isSpecial);
-	}
+	bullets.emplace_back(position, moveVec);
 }
 
-void InversusContainer::ActiveExplosion(Vec2DF position, COLORREF color, bool isCollision)
+void InversusContainer::AddExplosion(Vec2DF position, COLORREF color, bool isCollision)
 {
-	bool haveToCreate = true;
-	for (auto& effect : explosionEffect)
-	{
-		if (effect.state == GenState::Off)
-		{
-			effect.TurnActive(position,color, isCollision);
-			haveToCreate = false;
-			break;
-		}
-	}
-	if (haveToCreate)
-	{
-		explosionEffect.emplace_back(this->framework);
-		explosionEffect.back().TurnActive(position,color, isCollision);
-	}
-}
-
-void InversusContainer::DropBullet(Vec2DF position, int count)
-{
-	bool haveToCreate = true;
-	for (auto& drop : dropBullets)
-	{
-		if (!drop.GetActiveState())
-		{
-			drop.ActiveDrop(position, count);
-			haveToCreate = false;
-			break;
-		}
-	}
-	if (haveToCreate)
-	{
-		dropBullets.emplace_back(this->framework);
-		dropBullets.back().ActiveDrop(position, count);
-	}
+	this->explosionEffect.emplace_back( position, color );
 }
 
 void InversusContainer::RefreshEnemyFromData( const MobDatas& datas )
 {
+	this->enemys.resize( datas.size() );
+	for ( size_t i = 0; i < this->enemys.size(); i++ )
+	{
+		this->enemys[i].RefreshFromData( datas[i] );
+	}
+}
+
+void InversusContainer::RefreshPlayersFromData( const GameSceneData& data )
+{
+	for ( size_t i = 0; i < 4; i++ )
+	{
+		this->player[i].RefreshFromData( data );
+	}
+}
+
+void InversusContainer::RefreshMapFromData( const GameSceneData& data )
+{
+	this->BlockMap.RefreshFromData( data );
+}
+
+void InversusContainer::CollectGarbage()
+{
+	for ( auto i = this->bullets.begin(); i != this->bullets.end(); )
+	{
+		if ( i->IsDestroy() )
+		{
+			i = this->bullets.erase( i );
+		}
+		else 
+		{
+			++i;
+		}
+	}
+
+	for ( auto i = this->explosionEffect.begin(); i != this->explosionEffect.end(); )
+	{
+		if ( i->IsDestroy() )
+		{
+			i = this->explosionEffect.erase( i );
+		}
+		else
+		{
+			++i;
+		}
+	}
 }
 
 Vec2DF InversusContainer::GetGameDisplaySize() const
@@ -116,15 +95,10 @@ Vec2DF InversusContainer::GetMargin() const
 	//blockSize.y += sin(expNum + (rand()%4) / 1.5f) * expNum;
 	return blockSize;
 }
-void InversusContainer::Reset(Difficulty diff)
+void InversusContainer::Reset()
 {
-	this->BlockMap.Reset(diff);
-	for ( auto& p : player )
-	{
-		p.Reset();
-	}
-	for (auto& effect : explosionEffect) { effect.Reset(); }
-	for (auto& bullet : bullets) { bullet.Reset(); }
-	for (auto& enemy : enemys) { enemy.Reset(); }
-	for (auto& drop : dropBullets) { drop.Reset(); }
+	this->enemys.clear();
+	this->bullets.clear();
+	this->explosionEffect.clear();
+	this->bullets.clear();
 }

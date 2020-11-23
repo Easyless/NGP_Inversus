@@ -40,7 +40,6 @@ constexpr int interval = 33;
 LRESULT CALLBACK wProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 
 LONGLONG updatecnt = 0;
-static InversusFramework framework;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ipszCmdParam, int mCmdShow)
 {
@@ -57,7 +56,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ipszCmdPa
 	ClientSocketManager::GetInstance()->CreateSocket();
 	ClientSocketManager::GetInstance()->SetConnection( addr.c_str() );
 	ClientSocketManager::GetInstance()->StartRecvThread();
-	InversusFramework::instance = &framework;
 
 	HWND hWnd;
 	MSG Message = MSG();
@@ -171,7 +169,7 @@ LRESULT CALLBACK wProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_CREATE:
 	{
-		framework.Create();
+		InversusFramework::GetInstance()->Create();
 
 		hDc = GetDC(hWnd);
 
@@ -212,21 +210,21 @@ LRESULT CALLBACK wProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 	{
 		int xPos = LOWORD(lParam);
 		int yPos = HIWORD(lParam);
-		framework.MouseInput(Vec2DU{ xPos,yPos }, iMessage);
+		InversusFramework::GetInstance()->MouseInput( Vec2DU{ xPos,yPos }, iMessage );
 	}
 	break;
 	case WM_MOUSEMOVE:
 	{
-		int xPos = LOWORD(lParam);
-		int yPos = HIWORD(lParam);
-		framework.MouseInput(Vec2DU{ xPos,yPos }, iMessage);
+		int xPos = LOWORD( lParam );
+		int yPos = HIWORD( lParam );
+		InversusFramework::GetInstance()->MouseInput( Vec2DU{ xPos,yPos }, iMessage );
 	}
 	break;
 	case WM_LBUTTONUP:
 	{
-		int xPos = LOWORD(lParam);
-		int yPos = HIWORD(lParam);
-		framework.MouseInput(Vec2DU{ xPos,yPos }, iMessage);
+		int xPos = LOWORD( lParam );
+		int yPos = HIWORD( lParam );
+		InversusFramework::GetInstance()->MouseInput(Vec2DU{ xPos,yPos }, iMessage);
 	}
 	break;
 	case WM_TIMER:
@@ -250,7 +248,7 @@ LRESULT CALLBACK wProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			INT64 elapsed = Endtime.QuadPart - BeginTime.QuadPart;
 			double duringtime = (double)elapsed / (double)Frequency.QuadPart;
 
-			framework.Update(static_cast<float>(duringtime));
+			InversusFramework::GetInstance()->Update(static_cast<float>(duringtime));
 
 			QueryPerformanceCounter(&BeginTime);
 			InvalidateRect(hWnd, nullptr, false);
@@ -297,20 +295,20 @@ LRESULT CALLBACK wProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		pInfo.DrawSize = Vec2DU{ClientRect.right,ClientRect.bottom};
 		pInfo.AntiAliasing = AntiAliasing;
 
-		framework.Draw(pInfo);
+		InversusFramework::GetInstance()->Draw(pInfo);
 
 		SetStretchBltMode(StretchDc, COLORONCOLOR);
 		//SetStretchBltMode(hDc, COLORONCOLOR);
-		auto displaySize = framework.GetDisplaySize();
+		auto displaySize = InversusFramework::GetInstance()->GetDisplaySize();
 
 
 		StretchBlt(StretchDc, 10, 10, displaySize.x, displaySize.y,
-			bufferDc, Margin.x + framework.GetMargin().x* AntiAliasing, Margin.y + framework.GetMargin().y* AntiAliasing, displaySize.x* AntiAliasing, displaySize.y* AntiAliasing,
+			bufferDc, Margin.x + InversusFramework::GetInstance()->GetMargin().x* AntiAliasing, Margin.y + InversusFramework::GetInstance()->GetMargin().y* AntiAliasing, displaySize.x* AntiAliasing, displaySize.y* AntiAliasing,
 			SRCCOPY);
 
 		pInfo.hdc = StretchDc;
-		framework.UIDraw(pInfo);
-		framework.MenuDraw(pInfo);
+		InversusFramework::GetInstance()->UIDraw(pInfo);
+		InversusFramework::GetInstance()->MenuDraw(pInfo);
 
 
 		BitBlt(hDc, 0, 0, ClientRect.right, ClientRect.bottom, StretchDc, 0, 0, SRCCOPY);
