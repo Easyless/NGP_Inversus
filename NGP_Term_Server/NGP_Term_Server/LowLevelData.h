@@ -16,6 +16,8 @@
 #define MAP_SIZE_Y (BLOCK_COUNT_Y * BLOCK_SIZE_Y) //단위 px, 맵 전체 픽셀 크기
 #define SERVER_PORT 15073
 
+#pragma pack(1)
+
 enum NetGameMessageType : unsigned char
 {
 	MSG_MESSAGE_NULL = 0,
@@ -125,6 +127,8 @@ struct NetGameMessage
 	NetGameMessageType type;
 	UINT parameterSize; //뒤에 따라올 메시지 후속 정보의 크기 (갯수 * 구조체 사이즈)
 };
+
+#pragma pack(0)
 
 //Utill Function
 inline UINT GetMessageParameterSize( NetGameMessageType type )
