@@ -128,8 +128,7 @@ struct NetGameMessage
 	UINT parameterSize; //뒤에 따라올 메시지 후속 정보의 크기 (갯수 * 구조체 사이즈)
 };
 
-#pragma pack(0)
-
+#pragma pack()
 //Utill Function
 inline UINT GetMessageParameterSize( NetGameMessageType type )
 {
@@ -191,3 +190,4 @@ inline UINT GetMessageParameterCount( const NetGameMessage& message )
 {
 	return GetMessageParameterCount( message.type, message.parameterSize );
 }
+

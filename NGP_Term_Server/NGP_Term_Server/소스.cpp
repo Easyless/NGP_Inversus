@@ -129,6 +129,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	NetGameMessage receivemessage;
 	NetGameMessage sendmessage = { MSG_WAIT_ROOM_DATA, GetMessageParameterSize(MSG_WAIT_ROOM_DATA) };
 
+	UINT datasize = 0;
 	SendtoAll(sendmessage);
 
 	int readyCount = 0;
@@ -136,7 +137,6 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	while (true) {
 		if (!isPlay || (isPlay && isSend)) {
 			// 데이터 송신 - 메세지 타입 및 사이즈
-
 			if (isPlay) {
 				sendmessage.type = MSG_SCENE_DATA;
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
@@ -184,7 +184,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 
 			std::cout << "recvmessage type: " << receivemessage.type << std::endl;
 
-			UINT datasize = GetMessageParameterSize(receivemessage.type);
+			datasize = GetMessageParameterSize(receivemessage.type);
 
 			// 데이터 수신 - 메세지 정보에 따른 후속 정보
 			switch (receivemessage.type)
@@ -239,10 +239,10 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 					bulletDatas.push_back(*b);
 				}
 
-				std::cout << "player upinput: " << playerInput[threadnum].isPressedMoveUp << std::endl;
-				std::cout << "player downinput: " << playerInput[threadnum].isPressedMoveDown << std::endl;
-				std::cout << "player leftinput: " << playerInput[threadnum].isPressedMoveLeft << std::endl;
-				std::cout << "player rightinput: " << playerInput[threadnum].isPressedMoveRight << std::endl;
+				std::cout << "player upinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveUp << std::endl;
+				std::cout << "player downinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveDown << std::endl;
+				std::cout << "player leftinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveLeft << std::endl;
+				std::cout << "player rightinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveRight << std::endl;
 				break;
 
 			default:
@@ -302,19 +302,17 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 			Delta = (currTime - lastTime) * 0.001f;
 
 			if (Delta >= 1 / FPS) {
-				//플레이어 관련
-
 				// move
 				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 				{
 					if (isConnect[i]) {
 						x = gameSceneData.playerState[i].positionX;
 						y = gameSceneData.playerState[i].positionY;
-
-						if (playerInput[i].isPressedMoveUp) { x -= PLAYER_SPEED; }
+						
+						if (playerInput[i].isPressedMoveUp) { y -= PLAYER_SPEED; }
 						if (playerInput[i].isPressedMoveDown) { y += PLAYER_SPEED; }
 						if (playerInput[i].isPressedMoveLeft) { x -= PLAYER_SPEED; }
-						if (playerInput[i].isPressedMoveRight) { y += PLAYER_SPEED; }
+						if (playerInput[i].isPressedMoveRight) { x += PLAYER_SPEED; }
 
 						gameSceneData.playerState[i].positionX = x;
 						gameSceneData.playerState[i].positionY = y;
@@ -322,29 +320,31 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				}
 
 				// bullet
-				for (auto b : bulletDatas)
-				{
-					x = b.positionX;
-					y = b.positionY;
-					switch (b.shootDirection)
+				if (!bulletDatas.empty()) {
+					for (auto b : bulletDatas)
 					{
-					case PlayerShootType::ShootUp:
-						y -= BULLET_SPEED;
-						break;
-					case PlayerShootType::ShootDown:
-						y += BULLET_SPEED;
-						break;
-					case PlayerShootType::ShootLeft:
-						x -= BULLET_SPEED;
-						break;
-					case PlayerShootType::ShootRight:
-						x += BULLET_SPEED;
-						break;
-					default:
-						break;
+						x = b.positionX;
+						y = b.positionY;
+						switch (b.shootDirection)
+						{
+						case PlayerShootType::ShootUp:
+							y -= BULLET_SPEED;
+							break;
+						case PlayerShootType::ShootDown:
+							y += BULLET_SPEED;
+							break;
+						case PlayerShootType::ShootLeft:
+							x -= BULLET_SPEED;
+							break;
+						case PlayerShootType::ShootRight:
+							x += BULLET_SPEED;
+							break;
+						default:
+							break;
+						}
+						b.positionX = x;
+						b.positionY = y;
 					}
-					b.positionX = x;
-					b.positionY = y;
 				}
 
 
@@ -366,15 +366,6 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				//	// 몹, 총알 충돌 - 몹 삭제 처리
 
 				//}
-
-				
-				// create
-
-				// create mob
-
-
-
-
 
 				lastTime = currTime;
 				isSend = true; // 업데이트 후 메시지 전송
@@ -417,6 +408,10 @@ int main(int argc, char* argv[]) {
 	// listen()
 	retval = listen(listen_sock, SOMAXCONN);
 	if (retval == SOCKET_ERROR) err_quit("listen()");
+
+	BOOL optval = TRUE; // Nagle 알고리즘 중지
+	setsockopt(listen_sock, IPPROTO_TCP, TCP_NODELAY,
+		(char*)&optval, sizeof(optval));
 
 	// 데이터 통신에 사용할 변수
 	SOCKET client_sock;
