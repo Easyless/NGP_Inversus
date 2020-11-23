@@ -361,8 +361,10 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				//	// 포지션 / 사이즈 위치 블럭 true로 변경
 				//	x = m.positionX / BLOCK_SIZE_X;
 				//	y = m.positionY / BLOCK_SIZE_Y;
-				//	// collision 
 
+				//	// 이동 - 가까운 플레이어에게 이동
+
+				//	// 충돌 
 				//	// 몹, 플레이어 충돌 - 플레이어 라이프 감소
 				//	// 몹, 총알 충돌 - 몹 삭제 처리
 
@@ -458,9 +460,10 @@ int main(int argc, char* argv[]) {
 		{
 			std::cout << isConnect[i] << " ";
 		}
+
 		std::cout << std::endl;
 		// 클라이언트 소켓으로 CommunicationThread 생성
-		if (success) {
+		if (success && !isPlay) {
 			arg = { client_sock, threadnum };
 			connectedSocket[threadnum] = client_sock;
 			hThread = CreateThread(NULL, 0, CommunicationThreadFunc,
