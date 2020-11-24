@@ -2,8 +2,12 @@
 #include <Windows.h>
 #define MAX_PLAYER_LENGTH 4
 #define MAX_LIFE_COUNT 3
-#define BLOCK_COUNT_X 21 // 11.21 수정 단위 갯수, 맵에서 블럭 가로,세로 개수
-#define BLOCK_COUNT_Y 21 // 11.21 수정 단위 갯수, 맵에서 블럭 가로,세로 개수
+#define PLAYER_MOVE_SPEED_PER_SECOND 200.0f
+#define BULLET_MOVE_SPEED_PER_SECOND 500.0f
+#define BULLET_REGEN_SECOND 1.0f
+#define MAX_BULLET_COUNT 6
+#define BLOCK_COUNT_X 19 // 11.21 수정 단위 갯수, 맵에서 블럭 가로,세로 개수
+#define BLOCK_COUNT_Y 19 // 11.21 수정 단위 갯수, 맵에서 블럭 가로,세로 개수
 #define BLOCK_SIZE_X 40 // 11.21 수정 단위 px , 블럭의 픽셀 크기
 #define BLOCK_SIZE_Y 40 // 11.21 수정 단위 px , 블럭의 픽셀 크기
 #define BULLET_SIZE_X 8 //11.21 추가 : 총알 사이즈 
@@ -61,6 +65,7 @@ struct PlayerPlayState // 플레이어 정보를 나타내는 구조체
 {
 	short positionX = -1;
 	short positionY = -1;
+	unsigned int remainBullet = 6;
 	bool isDead = false;
 };
 struct PlayMapData // 맵 정보를 나타내는 구조체

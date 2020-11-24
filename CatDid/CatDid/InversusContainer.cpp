@@ -7,7 +7,7 @@
 #include "UIObject.h"
 
 InversusContainer::InversusContainer()
-	:BlockMap(21, 21, Vec2DF{ 40,40 } )
+	:BlockMap(BLOCK_COUNT_X, BLOCK_COUNT_Y, Vec2DF{ 40,40 } )
 {
 	for ( size_t i = 0; i < 4; i++ )
 	{
@@ -98,7 +98,8 @@ Vec2DF InversusContainer::GetGameDisplaySize() const
 }
 Vec2DF InversusContainer::GetMargin() const
 {
-	auto blockSize = this->BlockMap.GetBlockSize();
+	//auto blockSize = this->BlockMap.GetBlockSize();
+	auto blockSize = Vec2DF{0,0};
 	//int expNum = static_cast<int>(this->framework->controller->explosionNum);
 	//blockSize.x += sin(expNum + (rand()%4) / 1.5f) * expNum;
 	//blockSize.y += sin(expNum + (rand()%4) / 1.5f) * expNum;
