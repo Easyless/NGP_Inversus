@@ -34,8 +34,8 @@ LPCTSTR lpszWindowName = L"Inversus";
 constexpr size_t X_SIZE = 1000;
 constexpr size_t Y_SIZE = 820;
 
-//constexpr int interval = 16;
-constexpr int interval = 33;
+constexpr int interval = 16;
+//constexpr int interval = 33;
 
 LRESULT CALLBACK wProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 
@@ -265,7 +265,8 @@ LRESULT CALLBACK wProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 	case WM_PAINT:
 	{
 
-		float AntiAliasing = 3.0f / 2;
+		float AntiAliasing = 1.0f;
+		//float AntiAliasing = 3.0f / 2;
 		//39 *  21
 		hDc = BeginPaint(hWnd, &ps);
 		ImageDc = CreateCompatibleDC(hDc);
