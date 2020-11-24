@@ -391,33 +391,6 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						}
 				
 					}
-					for (auto& b : bulletDatas)
-					{
-						// ÃÑ¾Ë »ý¼º ÀÎÇ²¿¡¼­
-						// ¹üÀ§ ¹þ¾î³ª¸é ÃÑ¾Ë »èÁ¦
-						x = b.positionX;
-						y = b.positionY;
-						switch (b.shootDirection)
-						{
-						case PlayerShootType::ShootUp:
-							y -= BULLET_SPEED;
-							break;
-						case PlayerShootType::ShootDown:
-							y += BULLET_SPEED;
-							break;
-						case PlayerShootType::ShootLeft:
-							x -= BULLET_SPEED;
-							break;
-						case PlayerShootType::ShootRight:
-							x += BULLET_SPEED;
-							break;
-						default:
-							break;
-						}
-						b.positionX = x;
-						b.positionY = y;
-
-					}
 				}
 
 
