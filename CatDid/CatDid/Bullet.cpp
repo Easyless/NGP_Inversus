@@ -6,26 +6,63 @@
 #include "InversusFramework.h"
 #include "NetworkDummyObject.h"
 
-Bullet::Bullet( Vec2DF position, Vec2DF MoveVector )
+//Bullet::Bullet( Vec2DF position, Vec2DF MoveVector )
+//{
+//	this->MoveVector = MoveVector;
+//	this->transform.Size = Vec2DF{ 8,8 };
+//	this->transform.Position = position;
+//	this->StartPosition = position;
+//	this->isSpecial = isSpecial;
+//}
+//
+//void Bullet::Update( float deltaTime )
+//{
+//	if ( !this->isDestroy )
+//	{
+//		auto curMoveSpeed = (this->isSpecial) ? SpecialMoveSpeed : MoveSpeed;
+//		this->transform.Translate( MoveVector * curMoveSpeed * deltaTime );
+//		if ( this->transform.Position.x > 3000 || this->transform.Position.x < -400 || this->transform.Position.y > 3000 || this->transform.Position.y < -400 )
+//		{
+//			this->Destroy();
+//		}
+//	}
+//}
+
+
+static Vec2DF GetShootDirection( PlayerShootType type )
 {
-	this->MoveVector = MoveVector;
+	switch ( type )
+	{
+	case None:
+		return Vec2DF( 0, 0 );
+	case ShootUp:
+		return Vec2DF::Up();
+	case ShootDown:
+		return Vec2DF::Down();
+	case ShootLeft:
+		return Vec2DF::Left();
+	case ShootRight:
+		return Vec2DF::Right();
+	}
+}
+
+
+
+Bullet::Bullet()
+{
 	this->transform.Size = Vec2DF{ 8,8 };
-	this->transform.Position = position;
-	this->StartPosition = position;
-	this->isSpecial = isSpecial;
+}
+
+void Bullet::RefreshFromData( const BulletData& data )
+{
+	this->isRender = true;
+	this->transform.Position.x = data.positionX;
+	this->transform.Position.y = data.positionY;
+	this->MoveVector = GetShootDirection(data.shootDirection);
 }
 
 void Bullet::Update( float deltaTime )
 {
-	if ( !this->isDestroy )
-	{
-		auto curMoveSpeed = (this->isSpecial) ? SpecialMoveSpeed : MoveSpeed;
-		this->transform.Translate( MoveVector * curMoveSpeed * deltaTime );
-		if ( this->transform.Position.x > 3000 || this->transform.Position.x < -400 || this->transform.Position.y > 3000 || this->transform.Position.y < -400 )
-		{
-			this->Destroy();
-		}
-	}
 }
 
 void Bullet::Draw( PaintInfo info )
@@ -43,11 +80,11 @@ void Bullet::Draw( PaintInfo info )
 		auto rt = RectF( this->transform.Position * info.AntiAliasing, this->transform.Size.x * info.AntiAliasing, this->transform.Size.y * info.AntiAliasing );
 		if ( MoveVector == Vec2DF::Up() )
 		{
-			rt.bottom = (StartPosition.y * info.AntiAliasing - rt.top < GradientMaxLength* info.AntiAliasing) ? StartPosition.y * info.AntiAliasing : rt.bottom = rt.top + GradientMaxLength * info.AntiAliasing;
+			rt.bottom = !(StartPosition.y * info.AntiAliasing - rt.top < GradientMaxLength* info.AntiAliasing) ? StartPosition.y * info.AntiAliasing : rt.bottom = rt.top + GradientMaxLength * info.AntiAliasing;
 		}
 		else if ( MoveVector == Vec2DF::Left() )
 		{
-			rt.right = (StartPosition.x * info.AntiAliasing - rt.left < GradientMaxLength* info.AntiAliasing) ? StartPosition.x * info.AntiAliasing : rt.right = rt.left + GradientMaxLength * info.AntiAliasing;
+			rt.right = !(StartPosition.x * info.AntiAliasing - rt.left < GradientMaxLength* info.AntiAliasing) ? StartPosition.x * info.AntiAliasing : rt.right = rt.left + GradientMaxLength * info.AntiAliasing;
 		}
 		else if ( MoveVector == Vec2DF::Down() )
 		{
@@ -81,8 +118,8 @@ void Bullet::Draw( PaintInfo info )
 		vert[1].Alpha = 0xFFFF;
 
 
-		grrect.UpperLeft = 0;
-		grrect.LowerRight = 1;
+		grrect.UpperLeft = 1;
+		grrect.LowerRight = 0;
 
 		GradientFill( info.hdc, vert, 2, &grrect, 1, ((MoveVector == Vec2DF::Right() || MoveVector == Vec2DF::Left()) ? GRADIENT_FILL_RECT_H : GRADIENT_FILL_RECT_V)
 		);
