@@ -356,6 +356,41 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				//	- 블럭 : 블럭 상태 변경 및 총알 삭제
 
 				if (!bulletDatas.empty()) {
+
+					for (size_t i = 0; i < bulletDatas.size(); i++)
+					{
+						// 총알 생성 인풋에서
+						// 범위 벗어나면 총알 삭제
+						x = bulletDatas.at(i).positionX;
+						y = bulletDatas.at(i).positionY;
+						switch (bulletDatas.at(i).shootDirection)
+						{
+						case PlayerShootType::ShootUp:
+							y -= BULLET_SPEED;
+							break;
+						case PlayerShootType::ShootDown:
+							y += BULLET_SPEED;
+							break;
+						case PlayerShootType::ShootLeft:
+							x -= BULLET_SPEED;
+							break;
+						case PlayerShootType::ShootRight:
+							x += BULLET_SPEED;
+							break;
+						default:
+							break;
+						}
+						bulletDatas.at(i).positionX = x;
+						bulletDatas.at(i).positionY = y;
+						
+
+						if (bulletDatas.at(i).positionX < 0 || bulletDatas.at(i).positionX > WINDOWSIZEX ||
+							bulletDatas.at(i).positionY < 0 || bulletDatas.at(i).positionY > WINDOWSIZEY) {
+							bulletDatas.erase(bulletDatas.begin() + i);
+							break;
+						}
+				
+					}
 					for (auto& b : bulletDatas)
 					{
 						// 총알 생성 인풋에서
@@ -382,10 +417,6 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						b.positionX = x;
 						b.positionY = y;
 
-						//if (b.positionX < 0 || b.positionY < 0 ||
-						//	b.positionX > WINDOWSIZEX || b.positionY > WINDOWSIZEY) {
-						//	bulletDatas.erase(std::remove(bulletDatas.begin(), bulletDatas.end(), b));
-						//}
 					}
 				}
 
