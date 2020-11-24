@@ -10,7 +10,6 @@
 
 Player::Player( UINT index )
 {
-	this->isRender = false;
 	this->playerIndex = index;
 	this->transform.Size = Vec2DF{ 25,25 };
 }
@@ -218,7 +217,7 @@ void Player::Update( float deltaTime )
 
 void Player::Draw( PaintInfo info )
 {
-	if ( this->isRender )
+	//if ( this->isRender )
 	{
 		HPEN hPen;
 		HBRUSH hBrush;

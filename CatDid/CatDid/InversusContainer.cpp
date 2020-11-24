@@ -19,23 +19,14 @@ InversusContainer::InversusContainer()
 void InversusContainer::Start()
 {
 }
-//void InversusContainer::AddBullet(Vec2DF position, Vec2DF moveVec, bool isSpecial)
-//{
-//	bullets.emplace_back(position, moveVec);
-//}
+void InversusContainer::AddBullet(Vec2DF position, Vec2DF moveVec, bool isSpecial)
+{
+	bullets.emplace_back(position, moveVec);
+}
 
 void InversusContainer::AddExplosion(Vec2DF position, COLORREF color, bool isCollision)
 {
 	this->explosionEffect.emplace_back( position, color );
-}
-
-void InversusContainer::RefreshBulletFromData( const BulletDatas& datas )
-{
-	this->bullets.resize( datas.size() );
-	for ( size_t i = 0; i < this->bullets.size(); i++ )
-	{
-		this->bullets[i].RefreshFromData( datas[i] );
-	}
 }
 
 void InversusContainer::RefreshEnemyFromData( const MobDatas& datas )
@@ -62,17 +53,17 @@ void InversusContainer::RefreshMapFromData( const GameSceneData& data )
 
 void InversusContainer::CollectGarbage()
 {
-	//for ( auto i = this->bullets.begin(); i != this->bullets.end(); )
-	//{
-	//	if ( i->IsDestroy() )
-	//	{
-	//		i = this->bullets.erase( i );
-	//	}
-	//	else 
-	//	{
-	//		++i;
-	//	}
-	//}
+	for ( auto i = this->bullets.begin(); i != this->bullets.end(); )
+	{
+		if ( i->IsDestroy() )
+		{
+			i = this->bullets.erase( i );
+		}
+		else 
+		{
+			++i;
+		}
+	}
 
 	for ( auto i = this->explosionEffect.begin(); i != this->explosionEffect.end(); )
 	{

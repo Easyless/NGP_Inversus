@@ -14,14 +14,12 @@ struct InversusContainer
 	Map BlockMap;
 	std::vector<Player> player;
 	std::vector<Enemy> enemys;
-	std::vector<Bullet> bullets;
-	//std::list<Bullet> bullets;
+	std::list<Bullet> bullets;
 	std::list<Explosion> explosionEffect;
 	std::list<std::unique_ptr<RefreshObject<int>>> UIObject;
 	void Start();
-	//void AddBullet(Vec2DF position, Vec2DF moveVec, bool isSpecial = false);
+	void AddBullet(Vec2DF position, Vec2DF moveVec, bool isSpecial = false);
 	void AddExplosion(Vec2DF position, COLORREF color, bool isCollision = true);
-	void RefreshBulletFromData( const BulletDatas& datas );
 	void RefreshEnemyFromData( const MobDatas& datas );
 	void RefreshPlayersFromData( const GameSceneData& data );
 	void RefreshMapFromData( const GameSceneData& data );

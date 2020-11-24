@@ -56,7 +56,6 @@ void InversusNetworkController::Update( float deltaTime )
 	if ( this->startGame )
 	{
 		this->RefreshPlayerData();
-		this->RefreshBulletData();
 		this->RefreshMapData();
 		this->GetPlayerInput();
 		this->SendPlayerInput();
@@ -79,7 +78,7 @@ void InversusNetworkController::RefreshPlayerData()
 	this->framework->container->RefreshPlayersFromData( this->sceneData );
 }
 
-static Vec2DF GetShootDirection( PlayerShootType type )
+Vec2DF GetShootDirection( PlayerShootType type )
 {
 	switch ( type )
 	{
@@ -98,11 +97,11 @@ static Vec2DF GetShootDirection( PlayerShootType type )
 
 void InversusNetworkController::RefreshBulletData()
 {
-	//for ( auto& b : this->bulletData )
-	//{
-	//	this->framework->container->AddBullet( Vec2DF( b.positionX, b.positionY ), GetShootDirection( b.shootDirection ) );
-	//}
-	this->framework->container->RefreshBulletFromData( this->bulletData );
+	for ( auto& b : this->bulletData )
+	{
+		this->framework->container->AddBullet( Vec2DF( b.positionX, b.positionY ), GetShootDirection( b.shootDirection ) );
+	}
+	this->bulletData.clear();
 }
 
 void InversusNetworkController::RefreshMapData()
