@@ -335,7 +335,6 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 			delta = (currTime - lastTime) * 0.001f;
 
 			if (delta >= 1.f / FPS) {
-
 				// 플레이어
 				// move
 				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
@@ -344,17 +343,17 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						x = gameSceneData.playerState[i].positionX;
 						y = gameSceneData.playerState[i].positionY;
 
-						if (playerInput[i].isPressedMoveUp && y > PLAYER_SPEED) {
-							y -= PLAYER_SPEED;
+						if (playerInput[i].isPressedMoveUp && y > PLAYER_MOVE_SPEED_PER_SECOND) {
+							y -= PLAYER_MOVE_SPEED_PER_SECOND * delta;
 						}
-						if (playerInput[i].isPressedMoveDown && y < MAP_SIZE_Y - PLAYER_SPEED) {
-							y += PLAYER_SPEED;
+						if (playerInput[i].isPressedMoveDown && y < MAP_SIZE_Y - PLAYER_MOVE_SPEED_PER_SECOND) {
+							y += PLAYER_MOVE_SPEED_PER_SECOND * delta;
 						}
 						if (playerInput[i].isPressedMoveLeft && x > PLAYER_SPEED) {
-							x -= PLAYER_SPEED;
+							x -= PLAYER_MOVE_SPEED_PER_SECOND * delta;
 						}
-						if (playerInput[i].isPressedMoveRight && x < MAP_SIZE_X - PLAYER_SPEED) {
-							x += PLAYER_SPEED;
+						if (playerInput[i].isPressedMoveRight && x < MAP_SIZE_X - PLAYER_MOVE_SPEED_PER_SECOND) {
+							x += PLAYER_MOVE_SPEED_PER_SECOND * delta;
 						}
 
 						gameSceneData.playerState[i].positionX = x;
@@ -375,10 +374,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 								std::cout << "add bullet" << std::endl;
 							}
 						}
-
 					}
-
-				
 				}
 
 				//	총알
@@ -387,26 +383,24 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				//	- 블럭 : 블럭 상태 변경 및 총알 삭제
 
 				if (!bulletDatas.empty()) {
-
 					for (size_t i = 0; i < bulletDatas.size(); i++)
 					{
-						// 총알 생성 인풋에서
-						// 범위 벗어나면 총알 삭제
+						// 총알 이동
 						x = bulletDatas.at(i).positionX;
 						y = bulletDatas.at(i).positionY;
 						switch (bulletDatas.at(i).shootDirection)
 						{
 						case PlayerShootType::ShootUp:
-							y -= BULLET_SPEED;
+							y -= BULLET_MOVE_SPEED_PER_SECOND * delta;
 							break;
 						case PlayerShootType::ShootDown:
-							y += BULLET_SPEED;
+							y += BULLET_MOVE_SPEED_PER_SECOND * delta;
 							break;
 						case PlayerShootType::ShootLeft:
-							x -= BULLET_SPEED;
+							x -= BULLET_MOVE_SPEED_PER_SECOND * delta;
 							break;
 						case PlayerShootType::ShootRight:
-							x += BULLET_SPEED;
+							x += BULLET_MOVE_SPEED_PER_SECOND * delta;
 							break;
 						default:
 							break;
@@ -414,40 +408,11 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						bulletDatas.at(i).positionX = x;
 						bulletDatas.at(i).positionY = y;
 
-
 						if (bulletDatas.at(i).positionX < 0 || bulletDatas.at(i).positionX > MAP_SIZE_X ||
 							bulletDatas.at(i).positionY < 0 || bulletDatas.at(i).positionY > MAP_SIZE_Y) {
 							bulletDatas.erase(bulletDatas.begin() + i);
 							break;
 						}
-
-					}
-					for (auto& b : bulletDatas)
-					{
-						// 총알 생성 인풋에서
-						// 범위 벗어나면 총알 삭제
-						x = b.positionX;
-						y = b.positionY;
-						switch (b.shootDirection)
-						{
-						case PlayerShootType::ShootUp:
-							y -= BULLET_SPEED;
-							break;
-						case PlayerShootType::ShootDown:
-							y += BULLET_SPEED;
-							break;
-						case PlayerShootType::ShootLeft:
-							x -= BULLET_SPEED;
-							break;
-						case PlayerShootType::ShootRight:
-							x += BULLET_SPEED;
-							break;
-						default:
-							break;
-						}
-						b.positionX = x;
-						b.positionY = y;
-
 					}
 				}
 
