@@ -316,9 +316,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 	float addBulletTimer[4] = { 0, };
 	float mobTimer = 0;
 	std::vector<float> mobActiveTimer;
-	
-	float moveVal = 0;
+	std::vector<int> mobtarget;
 
+	float moveVal = 0;
 	while (true) {
 		if (isPlay) {
 			if (isStart) { // 시작 2초 후부터 업데이트 
@@ -356,17 +356,19 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						if (playerInput[i].isPressedMoveDown && y < MAP_SIZE_Y - moveVal) {
 							y += moveVal;
 						}
+						// 블럭 이동 가능 여부
+						if (!gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y)][(int)(x / BLOCK_SIZE_X)]) {
+							gameSceneData.playerState[i].positionY = y;
+						}
+
 						if (playerInput[i].isPressedMoveLeft && x > moveVal) {
 							x -= moveVal;
 						}
 						if (playerInput[i].isPressedMoveRight && x < MAP_SIZE_X - moveVal) {
 							x += moveVal;
 						}
-
-						// 블럭 이동 가능 여부
 						if (!gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y)][(int)(x / BLOCK_SIZE_X)]) {
 							gameSceneData.playerState[i].positionX = x;
-							gameSceneData.playerState[i].positionY = y;
 						}
 
 						if (isCharging[i]) {
@@ -388,18 +390,16 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				}
 
 				//	총알
-				//	메시지
-				//	충돌 - 몹 : 몹 폭발 및 총알 삭제
-				//	- 블럭 : 블럭 상태 변경 및 총알 삭제
+				
 
 				if (!bulletDatas.empty()) {
 					for (size_t i = 0; i < bulletDatas.size(); i++)
 					{
 						// 총알 이동
-						x = bulletDatas.at(i).positionX;
-						y = bulletDatas.at(i).positionY;
+						x = bulletDatas[i].positionX;
+						y = bulletDatas[i].positionY;
 						moveVal = BULLET_MOVE_SPEED_PER_SECOND * delta;
-						switch (bulletDatas.at(i).shootDirection)
+						switch (bulletDatas[i].shootDirection)
 						{
 						case PlayerShootType::ShootUp:
 							y -= moveVal;
@@ -416,15 +416,24 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						default:
 							break;
 						}
-						bulletDatas.at(i).positionX = x;
-						bulletDatas.at(i).positionY = y;
+						bulletDatas[i].positionX = x;
+						bulletDatas[i].positionY = y;
 
-						if (bulletDatas.at(i).positionX < 0 || bulletDatas.at(i).positionX > MAP_SIZE_X ||
-							bulletDatas.at(i).positionY < 0 || bulletDatas.at(i).positionY > MAP_SIZE_Y) {
+						if (bulletDatas[i].positionX < 0 || bulletDatas[i].positionX > MAP_SIZE_X ||
+							bulletDatas[i].positionY < 0 || bulletDatas[i].positionY > MAP_SIZE_Y) {
 							bulletDatas.erase(bulletDatas.begin() + i);
 							break;
 						}
+
+						x = bulletDatas[i].positionX / BLOCK_SIZE_X;
+						y = bulletDatas[i].positionY / BLOCK_SIZE_Y;
+						if (gameSceneData.mapData.blockState[(int)y][(int)x]) {
+							gameSceneData.mapData.blockState[(int)y][(int)x] = false;
+							bulletDatas.erase(bulletDatas.begin() + i); // 총알 관통x
+							break;
+						}
 					}
+					//	충돌 - 몹 : 몹 폭발 및 총알 삭제, 폭발 이벤트 메시지
 				}
 
 
@@ -439,42 +448,33 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 					m->positionY = rand() % MAP_SIZE_Y;
 					mobDatas.push_back(*m);
 					mobActiveTimer.push_back(0);
+					mobtarget.push_back(0);
 				}
 
 				//	몹
 				for (size_t i = 0; i < mobDatas.size(); i++)
 				{
+					for (size_t j = 0; j < MAX_PLAYER_LENGTH; j++)
+					{
+						//	이동 - 각 플레이어 까지의 거리 계산
+						// 거리가 더 가까울 경우
+						mobtarget[i] = j;
+					}
+					
 					mobActiveTimer[i] += delta; 
 					if (mobActiveTimer[i] > 1) {
-						// 이동
+						// 타겟 방향으로 이동
 
 						// 몹 위치 블럭 막기
 						x = mobDatas[i].positionX / BLOCK_SIZE_X;
 						y = mobDatas[i].positionY / BLOCK_SIZE_Y;
 						gameSceneData.mapData.blockState[(int)y][(int)x] = true;
 					}
+
+					//	충돌 - 플레이어 : 플레이어 사망, 목숨 카운트 감소
+					//	- 총알 : 몹 삭제 및 폭발 이벤트
 				}
-
-				//	메시지
-				//	몹 위치의 블럭 막기
-				//	충돌 - 플레이어 : 플레이어 사망, 목숨 카운트 감소
-				//	- 총알 : 몹 삭제 및 폭발 이벤트
-
-				//	이동 - 각 플레이어 까지의 거리 계산 후 가까운 플레이어 위치로
-
-				//// mob
-				//for (auto m : mobDatas) {
-				//	// 포지션 / 사이즈 위치 블럭 true로 변경
-				//	x = m.positionX / BLOCK_SIZE_X;
-				//	y = m.positionY / BLOCK_SIZE_Y;
-
-				//	// 이동 - 가까운 플레이어에게 이동
-
-				//	// 충돌 
-				//	// 몹, 플레이어 충돌 - 플레이어 라이프 감소
-				//	// 몹, 총알 충돌 - 몹 삭제 처리
-
-				//}
+				
 
 				lastTime = currTime;
 				for (size_t i = 0; i < 4; i++)

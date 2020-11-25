@@ -2,8 +2,12 @@
 #include <Windows.h>
 #define MAX_PLAYER_LENGTH 4
 #define MAX_LIFE_COUNT 3
-#define BLOCK_COUNT_X 21 // 11.21 수정 단위 갯수, 맵에서 블럭 가로,세로 개수
-#define BLOCK_COUNT_Y 21 // 11.21 수정 단위 갯수, 맵에서 블럭 가로,세로 개수
+#define PLAYER_MOVE_SPEED_PER_SECOND 200.0f
+#define BULLET_MOVE_SPEED_PER_SECOND 500.0f
+#define BULLET_REGEN_SECOND 1.0f
+#define MAX_BULLET_COUNT 6
+#define BLOCK_COUNT_X 19 // 11.21 수정 단위 갯수, 맵에서 블럭 가로,세로 개수
+#define BLOCK_COUNT_Y 19 // 11.21 수정 단위 갯수, 맵에서 블럭 가로,세로 개수
 #define BLOCK_SIZE_X 40 // 11.21 수정 단위 px , 블럭의 픽셀 크기
 #define BLOCK_SIZE_Y 40 // 11.21 수정 단위 px , 블럭의 픽셀 크기
 #define BULLET_SIZE_X 8 //11.21 추가 : 총알 사이즈 
@@ -61,6 +65,7 @@ struct PlayerPlayState // 플레이어 정보를 나타내는 구조체
 {
 	short positionX = -1;
 	short positionY = -1;
+	unsigned int remainBullet = 6;
 	bool isDead = false;
 };
 struct PlayMapData // 맵 정보를 나타내는 구조체
@@ -127,67 +132,69 @@ struct NetGameMessage
 	NetGameMessageType type;
 	UINT parameterSize; //뒤에 따라올 메시지 후속 정보의 크기 (갯수 * 구조체 사이즈)
 };
-
 #pragma pack()
+
 //Utill Function
-inline UINT GetMessageParameterSize( NetGameMessageType type )
+inline UINT GetMessageParameterSize(NetGameMessageType type)
 {
-	switch ( type )
+	switch (type)
 	{
 	case MSG_MESSAGE_NULL: return 0;
-	case MSG_WAIT_ROOM_DATA: return sizeof( WaitRoomData );
+	case MSG_WAIT_ROOM_DATA: return sizeof(WaitRoomData);
 	case MSG_GAME_ALL_READY: return 0;
 	case MSG_REQ_READY: return 0;
 	case MSG_CANCLE_READY: return 0;
 	case MSG_GAME_START: return 0;
 	case MSG_GAME_END: return 0;
-	case MSG_SCENE_DATA: return sizeof( GameSceneData );
-	case MSG_BULLET_DATA: return sizeof( BulletData );
-	case MSG_MOB_DATA: return sizeof( MobData );
-	case MSG_PLAYER_INPUT: return sizeof( PlayerInput );
+	case MSG_SCENE_DATA: return sizeof(GameSceneData);
+	case MSG_BULLET_DATA: return sizeof(BulletData);
+	case MSG_MOB_DATA: return sizeof(MobData);
+	case MSG_PLAYER_INPUT: return sizeof(PlayerInput);
 	}
 }
+
 
 #define TOSTRING(x) #x
 
-inline const char* GetMessageString( NetGameMessageType type )
+inline const char* GetMessageString(NetGameMessageType type)
 {
-	switch ( type )
+	switch (type)
 	{
-	case MSG_MESSAGE_NULL: return TOSTRING( MSG_MESSAGE_NULL );
-	case MSG_WAIT_ROOM_DATA: return TOSTRING( MSG_WAIT_ROOM_DATA );
-	case MSG_GAME_ALL_READY: return TOSTRING( MSG_GAME_ALL_READY );
-	case MSG_REQ_READY: return TOSTRING( MSG_REQ_READY );
-	case MSG_CANCLE_READY: return TOSTRING( MSG_CANCLE_READY );
-	case MSG_GAME_START: return TOSTRING( MSG_GAME_START );
-	case MSG_GAME_END: return TOSTRING( MSG_GAME_END );
-	case MSG_SCENE_DATA: return TOSTRING( MSG_SCENE_DATA );
-	case MSG_BULLET_DATA: return TOSTRING( MSG_BULLET_DATA );
-	case MSG_MOB_DATA: return TOSTRING( MSG_MOB_DATA );
-	case MSG_PLAYER_INPUT: return TOSTRING( MSG_PLAYER_INPUT );
+	case MSG_MESSAGE_NULL: return TOSTRING(MSG_MESSAGE_NULL);
+	case MSG_WAIT_ROOM_DATA: return TOSTRING(MSG_WAIT_ROOM_DATA);
+	case MSG_GAME_ALL_READY: return TOSTRING(MSG_GAME_ALL_READY);
+	case MSG_REQ_READY: return TOSTRING(MSG_REQ_READY);
+	case MSG_CANCLE_READY: return TOSTRING(MSG_CANCLE_READY);
+	case MSG_GAME_START: return TOSTRING(MSG_GAME_START);
+	case MSG_GAME_END: return TOSTRING(MSG_GAME_END);
+	case MSG_SCENE_DATA: return TOSTRING(MSG_SCENE_DATA);
+	case MSG_BULLET_DATA: return TOSTRING(MSG_BULLET_DATA);
+	case MSG_MOB_DATA: return TOSTRING(MSG_MOB_DATA);
+	case MSG_PLAYER_INPUT: return TOSTRING(MSG_PLAYER_INPUT);
+	default:
+		return "MSG_ERROR_NOT_DEFINED";
 	}
 }
 
-inline UINT GetMessageParameterCount( NetGameMessageType type, UINT parameterSize )
+inline UINT GetMessageParameterCount(NetGameMessageType type, UINT parameterSize)
 {
-	switch ( type )
+	switch (type)
 	{
 	case MSG_MESSAGE_NULL: return 0;
-	case MSG_WAIT_ROOM_DATA: return parameterSize / sizeof( WaitRoomData );
+	case MSG_WAIT_ROOM_DATA: return parameterSize / sizeof(WaitRoomData);
 	case MSG_GAME_ALL_READY: return 0;
 	case MSG_REQ_READY: return 0;
 	case MSG_CANCLE_READY: return 0;
 	case MSG_GAME_START: return 0;
 	case MSG_GAME_END: return 0;
-	case MSG_SCENE_DATA: return parameterSize / sizeof( GameSceneData );
-	case MSG_BULLET_DATA: return parameterSize / sizeof( BulletData );
-	case MSG_MOB_DATA: return parameterSize / sizeof( MobData );
-	case MSG_PLAYER_INPUT: return parameterSize / sizeof( PlayerInput );
+	case MSG_SCENE_DATA: return parameterSize / sizeof(GameSceneData);
+	case MSG_BULLET_DATA: return parameterSize / sizeof(BulletData);
+	case MSG_MOB_DATA: return parameterSize / sizeof(MobData);
+	case MSG_PLAYER_INPUT: return parameterSize / sizeof(PlayerInput);
 	}
 }
 
-inline UINT GetMessageParameterCount( const NetGameMessage& message )
+inline UINT GetMessageParameterCount(const NetGameMessage& message)
 {
-	return GetMessageParameterCount( message.type, message.parameterSize );
+	return GetMessageParameterCount(message.type, message.parameterSize);
 }
-
