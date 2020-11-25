@@ -174,6 +174,10 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * bulletDatas.size();
 				retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
 				retval = send(client_sock, (char*)bulletDatas.data(), sizeof(BulletData) * bulletDatas.size(), 0);
+				sendmessage.type = MSG_MOB_DATA;
+				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * mobDatas.size();
+				retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
+				retval = send(client_sock, (char*)mobDatas.data(), sizeof(MobData) * mobDatas.size(), 0);
 				//SendtoAll(sendmessage);
 				break;
 			case MSG_BULLET_DATA:
@@ -309,8 +313,11 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 	float delta = 0;
 	float x, y;
-	float mobTimer = 0;
 	float addBulletTimer[4] = { 0, };
+	float mobTimer = 0;
+	std::vector<float> mobActiveTimer;
+	
+	float moveVal = 0;
 
 	while (true) {
 		if (isPlay) {
@@ -342,22 +349,25 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 					if (isConnect[i]) {
 						x = gameSceneData.playerState[i].positionX;
 						y = gameSceneData.playerState[i].positionY;
+						moveVal = PLAYER_MOVE_SPEED_PER_SECOND * delta;
+						if (playerInput[i].isPressedMoveUp && y > moveVal) {
+							y -= moveVal;
+						}
+						if (playerInput[i].isPressedMoveDown && y < MAP_SIZE_Y - moveVal) {
+							y += moveVal;
+						}
+						if (playerInput[i].isPressedMoveLeft && x > moveVal) {
+							x -= moveVal;
+						}
+						if (playerInput[i].isPressedMoveRight && x < MAP_SIZE_X - moveVal) {
+							x += moveVal;
+						}
 
-						if (playerInput[i].isPressedMoveUp && y > PLAYER_MOVE_SPEED_PER_SECOND) {
-							y -= PLAYER_MOVE_SPEED_PER_SECOND * delta;
+						// 블럭 이동 가능 여부
+						if (!gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y)][(int)(x / BLOCK_SIZE_X)]) {
+							gameSceneData.playerState[i].positionX = x;
+							gameSceneData.playerState[i].positionY = y;
 						}
-						if (playerInput[i].isPressedMoveDown && y < MAP_SIZE_Y - PLAYER_MOVE_SPEED_PER_SECOND) {
-							y += PLAYER_MOVE_SPEED_PER_SECOND * delta;
-						}
-						if (playerInput[i].isPressedMoveLeft && x > PLAYER_SPEED) {
-							x -= PLAYER_MOVE_SPEED_PER_SECOND * delta;
-						}
-						if (playerInput[i].isPressedMoveRight && x < MAP_SIZE_X - PLAYER_MOVE_SPEED_PER_SECOND) {
-							x += PLAYER_MOVE_SPEED_PER_SECOND * delta;
-						}
-
-						gameSceneData.playerState[i].positionX = x;
-						gameSceneData.playerState[i].positionY = y;
 
 						if (isCharging[i]) {
 							chargingTime[i] += delta;
@@ -388,19 +398,20 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						// 총알 이동
 						x = bulletDatas.at(i).positionX;
 						y = bulletDatas.at(i).positionY;
+						moveVal = BULLET_MOVE_SPEED_PER_SECOND * delta;
 						switch (bulletDatas.at(i).shootDirection)
 						{
 						case PlayerShootType::ShootUp:
-							y -= BULLET_MOVE_SPEED_PER_SECOND * delta;
+							y -= moveVal;
 							break;
 						case PlayerShootType::ShootDown:
-							y += BULLET_MOVE_SPEED_PER_SECOND * delta;
+							y += moveVal;
 							break;
 						case PlayerShootType::ShootLeft:
-							x -= BULLET_MOVE_SPEED_PER_SECOND * delta;
+							x -= moveVal;
 							break;
 						case PlayerShootType::ShootRight:
-							x += BULLET_MOVE_SPEED_PER_SECOND * delta;
+							x += moveVal;
 							break;
 						default:
 							break;
@@ -417,22 +428,39 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				}
 
 
-				//BLOCK_SIZE_X
-				//BLOCK_SIZE_Y
-				//BULLET_SIZE_X
-				//BULLET_SIZE_Y
-				//PLAYER_SIZE_X
-				//PLAYER_SIZE_Y
+				
+				//  몹 생성
+				mobTimer += delta;
+				if (mobTimer > 3) {
+					mobTimer = 0;
+					MobData* m = new MobData;
+					m->isSpecialMob = false;
+					m->positionX = rand() % MAP_SIZE_X;
+					m->positionY = rand() % MAP_SIZE_Y;
+					mobDatas.push_back(*m);
+					mobActiveTimer.push_back(0);
+				}
 
 				//	몹
+				for (size_t i = 0; i < mobDatas.size(); i++)
+				{
+					mobActiveTimer[i] += delta; 
+					if (mobActiveTimer[i] > 1) {
+						// 이동
+
+						// 몹 위치 블럭 막기
+						x = mobDatas[i].positionX / BLOCK_SIZE_X;
+						y = mobDatas[i].positionY / BLOCK_SIZE_Y;
+						gameSceneData.mapData.blockState[(int)y][(int)x] = true;
+					}
+				}
+
 				//	메시지
 				//	몹 위치의 블럭 막기
 				//	충돌 - 플레이어 : 플레이어 사망, 목숨 카운트 감소
 				//	- 총알 : 몹 삭제 및 폭발 이벤트
 
 				//	이동 - 각 플레이어 까지의 거리 계산 후 가까운 플레이어 위치로
-
-
 
 				//// mob
 				//for (auto m : mobDatas) {
