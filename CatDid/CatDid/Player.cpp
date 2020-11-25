@@ -18,12 +18,19 @@ Player::Player( UINT index )
 void Player::RefreshFromData( const GameSceneData& data )
 {
 	this->isRender = !data.playerState[playerIndex].isDead;
+	if ( this->BulletCount != data.playerState[playerIndex].remainBullet )
+	{
+		this->regenTime = 0.0f;
+	}
+	this->BulletCount = data.playerState[playerIndex].remainBullet;
 	this->transform.Position.x = data.playerState[playerIndex].positionX;
 	this->transform.Position.y = data.playerState[playerIndex].positionY;
 }
 
 void Player::Update( float deltaTime )
 {
+	this->bulletRotate += rotateSpeed * deltaTime;
+	this->regenTime += deltaTime;
 	//if (this->framework->GetPauseSate())
 	//{
 	//}
@@ -87,7 +94,6 @@ void Player::Update( float deltaTime )
 	//		{
 	//			rotate = 0;
 	//		}
-
 	//		if (CharginCount < maxCharge || !Utill::approximation(bulletRotate, rotate))
 	//		{
 	//			this->bulletRotate += rotateSpeed * deltaTime;
@@ -232,6 +238,7 @@ void Player::Draw( PaintInfo info )
 		Ellipse( info.hdc, rt.left, rt.top, rt.right, rt.bottom );
 
 		size_t i = 0;
+		size_t currentCount = min( BulletCount, 6 );
 		for ( i = 0; i < min( BulletCount, 6 ); i++ )
 		{
 			COLORREF color = RGB( 255, 255, 255 );
@@ -244,7 +251,9 @@ void Player::Draw( PaintInfo info )
 			HBRUSH hBulletBrush = CreateSolidBrush( color );
 			auto oldBulletBrush = (HBRUSH)SelectObject( info.hdc, hBulletBrush );
 			auto bulletPos = (this->transform.Position + Vec2DF{ 0,10 }).RotatedPoint( this->transform.Position, i * 60 + bulletRotate );
-			auto bulletRt = RectF( bulletPos * info.AntiAliasing, this->transform.Size.x * 0.2 * info.AntiAliasing, this->transform.Size.y * 0.2 * info.AntiAliasing ) + info.margin;
+			//float scale = min( 1.0f, (i == currentCount - 1) ? this->regenTime : 1.0f );
+			float scale = 1.0f;
+			auto bulletRt = RectF( bulletPos * info.AntiAliasing, this->transform.Size.x * 0.2 * info.AntiAliasing * scale, this->transform.Size.y * 0.2 * info.AntiAliasing * scale ) + info.margin;
 			Ellipse( info.hdc, bulletRt.left, bulletRt.top, bulletRt.right, bulletRt.bottom );
 			SelectObject( info.hdc, oldBulletBrush );
 			SelectObject( info.hdc, oldBulletPen );
@@ -253,13 +262,15 @@ void Player::Draw( PaintInfo info )
 		}
 		if ( i < 6 )
 		{
-			COLORREF color = RGB( 255 * this->regenTime / bulletRegenDelay, 255 * this->regenTime / bulletRegenDelay, 255 * this->regenTime / bulletRegenDelay );
+			//COLORREF color = RGB( 255 * this->regenTime / bulletRegenDelay, 255 * this->regenTime / bulletRegenDelay, 255 * this->regenTime / bulletRegenDelay );
+			COLORREF color = RGB( 255, 255, 255 );
 			HPEN hBulletPen = CreatePen( PS_SOLID, 1, color );
 			auto oldBulletPen = (HPEN)SelectObject( info.hdc, hBulletPen );
 			HBRUSH hBulletBrush = CreateSolidBrush( color );
 			auto oldBulletBrush = (HBRUSH)SelectObject( info.hdc, hBulletBrush );
 			auto bulletPos = (this->transform.Position + Vec2DF{ 0,10 }).RotatedPoint( this->transform.Position, (i) * 60 + bulletRotate );
-			auto bulletRt = RectF( bulletPos * info.AntiAliasing, this->transform.Size.x * 0.2 * info.AntiAliasing, this->transform.Size.y * 0.2 * info.AntiAliasing ) + info.margin;
+			float scale = min(this->regenTime, 1.0f );
+			auto bulletRt = RectF( bulletPos * info.AntiAliasing, this->transform.Size.x * 0.2 * info.AntiAliasing * scale, this->transform.Size.y * 0.2 * info.AntiAliasing * scale ) + info.margin;
 			Ellipse( info.hdc, bulletRt.left, bulletRt.top, bulletRt.right, bulletRt.bottom );
 			SelectObject( info.hdc, oldBulletBrush );
 			SelectObject( info.hdc, oldBulletPen );

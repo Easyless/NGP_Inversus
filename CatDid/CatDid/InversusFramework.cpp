@@ -11,7 +11,7 @@
 #pragma comment(lib,"msimg32")
 
 InversusFramework::InversusFramework()
-	:menu(new InversusMenu(this)),container(new InversusContainer()), controller(new InversusNetworkController(this))
+	:menu( new InversusMenu( this ) ), container( new InversusContainer() ), controller( new InversusNetworkController( this ) )
 {
 
 }
@@ -39,37 +39,38 @@ void InversusFramework::Create()
 	this->controller->InitlizeWithSocket( this->socket );
 }
 
-void InversusFramework::Update(float deltaTime)
+void InversusFramework::Update( float deltaTime )
 {
-	this->controller->Update(deltaTime);
-	for (auto& effect : container->explosionEffect) { effect.Update(deltaTime); }
-	for (auto& bullet : container->bullets) { bullet.Update(deltaTime); }
-	container->BlockMap.Update(deltaTime);
-	this->menu->Update(deltaTime);
+	this->controller->Update( deltaTime );
+	for ( auto& effect : container->explosionEffect ) { effect.Update( deltaTime ); }
+	for ( auto& bullet : container->bullets ) { bullet.Update( deltaTime ); }
+	container->BlockMap.Update( deltaTime );
+	for ( auto& p : container->player ) { p.Update( deltaTime ); }
+	this->menu->Update( deltaTime );
 	container->CollectGarbage();
 
 }
 
-void InversusFramework::Draw(PaintInfo info)
+void InversusFramework::Draw( PaintInfo info )
 {
-	container->BlockMap.Draw(info);
-	for (auto& bullet : container->bullets) { bullet.Draw(info); }
-	for (auto& enemy : container->enemys) { enemy.Draw(info); }
+	container->BlockMap.Draw( info );
+	for ( auto& bullet : container->bullets ) { bullet.Draw( info ); }
+	for ( auto& enemy : container->enemys ) { enemy.Draw( info ); }
 	for ( auto& p : container->player ) { p.Draw( info ); }
-	for (auto& effect : container->explosionEffect) { effect.Draw(info); }
+	for ( auto& effect : container->explosionEffect ) { effect.Draw( info ); }
 }
 
-void InversusFramework::UIDraw(PaintInfo info)
+void InversusFramework::UIDraw( PaintInfo info )
 {
-	for (auto& uiobj : this->container->UIObject)
+	for ( auto& uiobj : this->container->UIObject )
 	{
-		uiobj->Draw(info);
+		uiobj->Draw( info );
 	}
 }
 
-void InversusFramework::MenuDraw(PaintInfo info)
+void InversusFramework::MenuDraw( PaintInfo info )
 {
-	this->menu->Draw(info);
+	this->menu->Draw( info );
 }
 
 Vec2DF InversusFramework::GetDisplaySize() const
@@ -81,9 +82,9 @@ Vec2DF InversusFramework::GetMargin() const
 	return this->container->GetMargin();
 }
 
-void InversusFramework::MouseInput(Vec2DU MousePos, UINT iMessage)
+void InversusFramework::MouseInput( Vec2DU MousePos, UINT iMessage )
 {
-	this->menu->MouseInput(MousePos, iMessage);
+	this->menu->MouseInput( MousePos, iMessage );
 }
 
 InversusFramework* InversusFramework::GetInstance()
