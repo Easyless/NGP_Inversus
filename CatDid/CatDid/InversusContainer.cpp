@@ -90,8 +90,8 @@ void InversusContainer::CollectGarbage()
 Vec2DF InversusContainer::GetGameDisplaySize() const
 {
 	auto blockCount = this->BlockMap.GetSize();
-	blockCount.first -= 2;
-	blockCount.second -= 2;
+	//blockCount.first -= 2;
+	//blockCount.second -= 2;
 	auto blockSize = this->BlockMap.GetBlockSize();
 	return Vec2DF{ blockSize.x*blockCount.first,blockSize.y * blockCount.second };
 

@@ -23,7 +23,7 @@
 #endif
 
 
-//#define PEEKMESSAGE
+#define PEEKMESSAGE
 
 #define UM_TIMER 5124124
 
@@ -111,10 +111,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ipszCmdPa
 			QueryPerformanceCounter(&Endtime);
 			INT64 elapsed = Endtime.QuadPart - BeginTime.QuadPart;
 			double duringtime = (double)elapsed / (double)Frequency.QuadPart;
-
-			framework.Update(static_cast<float>(duringtime));
-			updatecnt++;
 			QueryPerformanceCounter(&BeginTime);
+
+			InversusFramework::GetInstance()->Update(static_cast<float>(duringtime));
+			updatecnt++;
 			InvalidateRect(hWnd, nullptr, false);
 		}
 	}
