@@ -14,6 +14,7 @@ Enemy::Enemy()
 
 void Enemy::RefreshFromData( const MobData& data )
 {
+	this->isRender = true;
 	this->isSpecial = data.isSpecialMob;
 	this->transform.Position.x = data.positionX;
 	this->transform.Position.y = data.positionY;
