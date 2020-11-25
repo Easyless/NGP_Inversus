@@ -57,6 +57,7 @@ void InversusNetworkController::Update( float deltaTime )
 	{
 		this->RefreshPlayerData();
 		this->RefreshBulletData();
+		this->RefreshMobData();
 		this->RefreshMapData();
 		this->GetPlayerInput();
 		this->SendPlayerInput();
