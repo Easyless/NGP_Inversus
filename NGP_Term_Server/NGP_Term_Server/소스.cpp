@@ -15,8 +15,6 @@
 #define FPS 30.f
 #define BULLET_SPEED 2.f
 #define PLAYER_SPEED 2.f
-#define WINDOWSIZEX 800
-#define WINDOWSIZEY 600
 
 struct Param {
 	SOCKET client_sock;
@@ -33,7 +31,12 @@ CRITICAL_SECTION cs;
 bool isConnect[MAX_PLAYER_LENGTH] = { false, false, false, false };
 bool isPlay = false;
 bool isStart = false;
-bool isSend[4] = { false, };
+
+
+bool isSend[MAX_PLAYER_LENGTH] = { false, };
+bool isCharging[MAX_PLAYER_LENGTH] = { false, };
+PlayerShootType shootDir[MAX_PLAYER_LENGTH] = { None, };
+float chargingTime[MAX_PLAYER_LENGTH] = { 0, };
 
 SOCKET connectedSocket[4] = { NULL, NULL, NULL, NULL };
 WaitRoomData waitRoomData;
@@ -167,11 +170,11 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			case MSG_SCENE_DATA:
 				retval = send(client_sock, (char*)&gameSceneData, sizeof(GameSceneData), 0);
 				std::cout << "send scene data" << std::endl;
-				if (!bulletDatas.empty()) {
-					sendmessage.type = MSG_BULLET_DATA;
-					sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * bulletDatas.size();
-					SendtoAll(sendmessage);
-				}
+				sendmessage.type = MSG_BULLET_DATA;
+				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * bulletDatas.size();
+				retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
+				retval = send(client_sock, (char*)bulletDatas.data(), sizeof(BulletData) * bulletDatas.size(), 0);
+				//SendtoAll(sendmessage);
 				break;
 			case MSG_BULLET_DATA:
 				break;
@@ -184,7 +187,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			// 데이터 수신 - 메세지 타입 및 사이즈
 			retval = recvn(client_sock, (char*)&receivemessage, sizeof(NetGameMessage), 0);
 			if (retval == SOCKET_ERROR) {
-
+				//Disconnect(client_sock, threadnum, sendmessage)
 				err_display("recvn, ready message");
 				isConnect[threadnum] = false;
 				connectedCount--;
@@ -245,15 +248,22 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			case NetGameMessageType::MSG_PLAYER_INPUT:
 				retval = recvn(client_sock, (char*)&playerInput[threadnum], datasize, 0);
 				// 받은 인풋 상태 저장, 업데이트에 영향
-				if (playerInput[threadnum].shootInput != PlayerShootType::None) { // 총알 생성
+				if (playerInput[threadnum].shootInput == PlayerShootType::None && isCharging[threadnum] &&
+					gameSceneData.playerState[threadnum].remainBullet > 0) { // 총알 생성
+					// 차지시간 if
 					BulletData* b = new BulletData;
 					b->ownerPlayer = threadnum;
 					b->positionX = gameSceneData.playerState[threadnum].positionX;
 					b->positionY = gameSceneData.playerState[threadnum].positionY;
-					b->shootDirection = playerInput[threadnum].shootInput;
+					b->shootDirection = shootDir[threadnum];
 					bulletDatas.push_back(*b);
+					isCharging[threadnum] = false;
+					gameSceneData.playerState[threadnum].remainBullet -= 1;
 				}
-
+				else if (playerInput[threadnum].shootInput != PlayerShootType::None && !isCharging[threadnum]) {
+					isCharging[threadnum] = true;
+					shootDir[threadnum] = playerInput[threadnum].shootInput;
+				}
 				std::cout << "player upinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveUp << std::endl;
 				std::cout << "player downinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveDown << std::endl;
 				std::cout << "player leftinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveLeft << std::endl;
@@ -296,9 +306,11 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 	DWORD lastTime = timeGetTime();
 	DWORD currTime;
-	float Delta = 0;
 
+	float delta = 0;
 	float x, y;
+	float mobTimer = 0;
+	float addBulletTimer[4] = { 0, };
 
 	while (true) {
 		if (isPlay) {
@@ -320,9 +332,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 			//Deltatime
 			currTime = timeGetTime();
-			Delta = (currTime - lastTime) * 0.001f;
+			delta = (currTime - lastTime) * 0.001f;
 
-			if (Delta >= 1.f / FPS) {
+			if (delta >= 1.f / FPS) {
 
 				// 플레이어
 				// move
@@ -335,19 +347,38 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						if (playerInput[i].isPressedMoveUp && y > PLAYER_SPEED) {
 							y -= PLAYER_SPEED;
 						}
-						if (playerInput[i].isPressedMoveDown && y < WINDOWSIZEY - PLAYER_SPEED) {
+						if (playerInput[i].isPressedMoveDown && y < MAP_SIZE_Y - PLAYER_SPEED) {
 							y += PLAYER_SPEED;
 						}
 						if (playerInput[i].isPressedMoveLeft && x > PLAYER_SPEED) {
 							x -= PLAYER_SPEED;
 						}
-						if (playerInput[i].isPressedMoveRight && x < WINDOWSIZEX - PLAYER_SPEED) {
+						if (playerInput[i].isPressedMoveRight && x < MAP_SIZE_X - PLAYER_SPEED) {
 							x += PLAYER_SPEED;
 						}
 
 						gameSceneData.playerState[i].positionX = x;
 						gameSceneData.playerState[i].positionY = y;
+
+						if (isCharging[i]) {
+							chargingTime[i] += delta;
+						}
+						else {
+							chargingTime[i] = 0;
+						}
+
+						if (gameSceneData.playerState[i].remainBullet < 6) {
+							addBulletTimer[i] += delta;
+							if (addBulletTimer[i] > 1) {
+								gameSceneData.playerState[i].remainBullet += 1;
+								addBulletTimer[i] = 0;
+								std::cout << "add bullet" << std::endl;
+							}
+						}
+
 					}
+
+				
 				}
 
 				//	총알
@@ -382,14 +413,14 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						}
 						bulletDatas.at(i).positionX = x;
 						bulletDatas.at(i).positionY = y;
-						
 
-						if (bulletDatas.at(i).positionX < 0 || bulletDatas.at(i).positionX > WINDOWSIZEX ||
-							bulletDatas.at(i).positionY < 0 || bulletDatas.at(i).positionY > WINDOWSIZEY) {
+
+						if (bulletDatas.at(i).positionX < 0 || bulletDatas.at(i).positionX > MAP_SIZE_X ||
+							bulletDatas.at(i).positionY < 0 || bulletDatas.at(i).positionY > MAP_SIZE_Y) {
 							bulletDatas.erase(bulletDatas.begin() + i);
 							break;
 						}
-				
+
 					}
 					for (auto& b : bulletDatas)
 					{
@@ -463,7 +494,8 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 		if (connectedCount == 0) {
 			isPlay = false;
-
+			bulletDatas.clear();
+			mobDatas.clear();
 		}
 	}
 	return 0;
