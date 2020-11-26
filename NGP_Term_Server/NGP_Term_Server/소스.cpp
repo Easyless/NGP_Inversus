@@ -37,7 +37,7 @@ bool isCharging[MAX_PLAYER_LENGTH] = { false, };
 PlayerShootType shootDir[MAX_PLAYER_LENGTH] = { None, };
 float chargingTime[MAX_PLAYER_LENGTH] = { 0, };
 
-SOCKET connectedSocket[4] = { NULL, NULL, NULL, NULL };
+SOCKET connectedSocket[MAX_PLAYER_LENGTH] = { NULL, NULL, NULL, NULL };
 WaitRoomData waitRoomData;
 GameSceneData gameSceneData;
 std::vector<BulletData> bulletDatas;
@@ -49,7 +49,7 @@ int connectedCount = 0;
 void InitSceneData() {
 	gameSceneData.leftLifeCount = 3;
 	gameSceneData.mapData = { false, };
-	for (size_t i = 0; i < 4; i++)
+	for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 	{
 		gameSceneData.playerState[i].positionX = i * 50;
 		gameSceneData.playerState[i].positionY = i * 30;
@@ -326,7 +326,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 	float delta = 0;
 	float x, y;
-	float addBulletTimer[4] = { 0, };
+	float addBulletTimer[MAX_PLAYER_LENGTH] = { 0, };
 	float mobTimer = 0;
 	std::vector<float> mobActiveTimer;
 	std::vector<int> mobtarget;
@@ -393,10 +393,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 						if (gameSceneData.playerState[i].remainBullet < 6) {
 							addBulletTimer[i] += delta;
-							if (addBulletTimer[i] > 1) {
+							if (addBulletTimer[i] > BULLET_REGEN_SECOND) {
 								gameSceneData.playerState[i].remainBullet += 1;
 								addBulletTimer[i] = 0;
-								std::cout << "add bullet" << std::endl;
 							}
 						}
 					}
@@ -413,6 +412,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 							if (Collision(mobDatas[j].positionX, bulletDatas[i].positionX,
 								mobDatas[j].positionY, bulletDatas[i].positionY, BULLET_SIZE_X, PLAYER_SIZE_X)) {
 								mobDatas.erase(mobDatas.begin() + j);
+								// 폭발 위치 저장 및 메시지 전송
 								break;
 							}
 						}
@@ -462,7 +462,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 				//  몹 생성
 				mobTimer += delta;
-				if (mobTimer > 3) {
+				if (mobTimer > 3) { // 몹 리젠시간, 방식 정하기
 					mobTimer = 0;
 					MobData* m = new MobData;
 					m->isSpecialMob = false;
@@ -508,7 +508,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 
 				lastTime = currTime;
-				for (size_t i = 0; i < 4; i++)
+				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 				{
 					isSend[i] = true; // 업데이트 후 메시지 전송
 				}
