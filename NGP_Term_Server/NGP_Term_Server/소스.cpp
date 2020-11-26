@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <list>
 #include <vector>
 #include <algorithm>
 #include "LowLevelData.h"
@@ -115,10 +114,6 @@ void SendtoAll(NetGameMessage sendmessage) {
 				send(connectedSocket[i], (char*)&waitRoomData, sizeof(WaitRoomData), 0);
 				std::cout << "sendtoall waitroomdata" << std::endl;
 				break;
-			case MSG_BULLET_DATA:
-				send(connectedSocket[i], (char*)bulletDatas.data(), sizeof(BulletData) * bulletDatas.size(), 0);
-				std::cout << "sendtoall bulletdatas" << std::endl;
-				break;
 			default:
 				break;
 			}
@@ -174,7 +169,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 
 			retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
 
-			std::cout << "sendmessage type: " << sendmessage.type << std::endl;
+			//std::cout << "sendmessage type: " << sendmessage.type << std::endl;
 
 			// 데이터 송신 - 메세지에 해당하는 데이터 송신
 			switch (sendmessage.type) {
@@ -186,7 +181,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				break;
 			case MSG_SCENE_DATA:
 				retval = send(client_sock, (char*)&gameSceneData, sizeof(GameSceneData), 0);
-				std::cout << "send scene data" << std::endl;
+				//std::cout << "send scene data" << std::endl;
 				sendmessage.type = MSG_BULLET_DATA;
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * bulletDatas.size();
 				retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
@@ -221,7 +216,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				return 0;
 			}
 
-			std::cout << "recvmessage type: " << receivemessage.type << std::endl;
+			//std::cout << "recvmessage type: " << receivemessage.type << std::endl;
 
 			datasize = GetMessageParameterSize(receivemessage.type);
 
@@ -286,10 +281,10 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 					isCharging[threadnum] = true;
 					shootDir[threadnum] = playerInput[threadnum].shootInput;
 				}
-				std::cout << "player upinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveUp << std::endl;
+				/*std::cout << "player upinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveUp << std::endl;
 				std::cout << "player downinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveDown << std::endl;
 				std::cout << "player leftinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveLeft << std::endl;
-				std::cout << "player rightinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveRight << std::endl;
+				std::cout << "player rightinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveRight << std::endl;*/
 				break;
 
 			default:
