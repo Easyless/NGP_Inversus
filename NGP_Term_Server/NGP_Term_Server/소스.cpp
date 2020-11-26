@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <list>
 #include <vector>
 #include <algorithm>
 #include "LowLevelData.h"
@@ -15,8 +14,6 @@
 #define FPS 30.f
 #define BULLET_SPEED 2.f
 #define PLAYER_SPEED 2.f
-#define WINDOWSIZEX 800
-#define WINDOWSIZEY 600
 
 struct Param {
 	SOCKET client_sock;
@@ -33,9 +30,14 @@ CRITICAL_SECTION cs;
 bool isConnect[MAX_PLAYER_LENGTH] = { false, false, false, false };
 bool isPlay = false;
 bool isStart = false;
-bool isSend[4] = { false, };
 
-SOCKET connectedSocket[4] = { NULL, NULL, NULL, NULL };
+
+bool isSend[MAX_PLAYER_LENGTH] = { false, };
+bool isCharging[MAX_PLAYER_LENGTH] = { false, };
+PlayerShootType shootDir[MAX_PLAYER_LENGTH] = { None, };
+float chargingTime[MAX_PLAYER_LENGTH] = { 0, };
+
+SOCKET connectedSocket[MAX_PLAYER_LENGTH] = { NULL, NULL, NULL, NULL };
 WaitRoomData waitRoomData;
 GameSceneData gameSceneData;
 std::vector<BulletData> bulletDatas;
@@ -47,7 +49,7 @@ int connectedCount = 0;
 void InitSceneData() {
 	gameSceneData.leftLifeCount = 3;
 	gameSceneData.mapData = { false, };
-	for (size_t i = 0; i < 4; i++)
+	for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 	{
 		gameSceneData.playerState[i].positionX = i * 50;
 		gameSceneData.playerState[i].positionY = i * 30;
@@ -112,15 +114,28 @@ void SendtoAll(NetGameMessage sendmessage) {
 				send(connectedSocket[i], (char*)&waitRoomData, sizeof(WaitRoomData), 0);
 				std::cout << "sendtoall waitroomdata" << std::endl;
 				break;
-			case MSG_BULLET_DATA:
-				send(connectedSocket[i], (char*)bulletDatas.data(), sizeof(BulletData) * bulletDatas.size(), 0);
-				std::cout << "sendtoall bulletdatas" << std::endl;
-				break;
 			default:
 				break;
 			}
 		}
 	}
+}
+
+bool Collision(float px1, float px2, float py1, float py2, float s1, float s2) {
+	if ((px1 - s1) > (px2 + s2)) {
+		return false;
+	}
+	if ((py1 - s1) > (py2 + s2)) {
+		return false;
+	}
+	if ((px2 - s2) > (px1 + s1)) {
+		return false;
+	}
+	if ((py2 - s2) > (py1 + s1)) {
+		return false;
+	}
+
+	return true;
 }
 
 
@@ -154,7 +169,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 
 			retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
 
-			std::cout << "sendmessage type: " << sendmessage.type << std::endl;
+			//std::cout << "sendmessage type: " << sendmessage.type << std::endl;
 
 			// 데이터 송신 - 메세지에 해당하는 데이터 송신
 			switch (sendmessage.type) {
@@ -166,12 +181,16 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				break;
 			case MSG_SCENE_DATA:
 				retval = send(client_sock, (char*)&gameSceneData, sizeof(GameSceneData), 0);
-				std::cout << "send scene data" << std::endl;
-				if (!bulletDatas.empty()) {
-					sendmessage.type = MSG_BULLET_DATA;
-					sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * bulletDatas.size();
-					SendtoAll(sendmessage);
-				}
+				//std::cout << "send scene data" << std::endl;
+				sendmessage.type = MSG_BULLET_DATA;
+				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * bulletDatas.size();
+				retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
+				retval = send(client_sock, (char*)bulletDatas.data(), sizeof(BulletData) * bulletDatas.size(), 0);
+				sendmessage.type = MSG_MOB_DATA;
+				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * mobDatas.size();
+				retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
+				retval = send(client_sock, (char*)mobDatas.data(), sizeof(MobData) * mobDatas.size(), 0);
+				//SendtoAll(sendmessage);
 				break;
 			case MSG_BULLET_DATA:
 				break;
@@ -184,7 +203,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			// 데이터 수신 - 메세지 타입 및 사이즈
 			retval = recvn(client_sock, (char*)&receivemessage, sizeof(NetGameMessage), 0);
 			if (retval == SOCKET_ERROR) {
-
+				//Disconnect(client_sock, threadnum, sendmessage)
 				err_display("recvn, ready message");
 				isConnect[threadnum] = false;
 				connectedCount--;
@@ -197,7 +216,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				return 0;
 			}
 
-			std::cout << "recvmessage type: " << receivemessage.type << std::endl;
+			//std::cout << "recvmessage type: " << receivemessage.type << std::endl;
 
 			datasize = GetMessageParameterSize(receivemessage.type);
 
@@ -245,19 +264,27 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			case NetGameMessageType::MSG_PLAYER_INPUT:
 				retval = recvn(client_sock, (char*)&playerInput[threadnum], datasize, 0);
 				// 받은 인풋 상태 저장, 업데이트에 영향
-				if (playerInput[threadnum].shootInput != PlayerShootType::None) { // 총알 생성
+				if (playerInput[threadnum].shootInput == PlayerShootType::None && isCharging[threadnum] &&
+					gameSceneData.playerState[threadnum].remainBullet > 0) { // 총알 생성
+					// 차지시간 if
 					BulletData* b = new BulletData;
 					b->ownerPlayer = threadnum;
 					b->positionX = gameSceneData.playerState[threadnum].positionX;
 					b->positionY = gameSceneData.playerState[threadnum].positionY;
-					b->shootDirection = playerInput[threadnum].shootInput;
+					b->shootDirection = shootDir[threadnum];
 					bulletDatas.push_back(*b);
+					isCharging[threadnum] = false;
+					gameSceneData.playerState[threadnum].remainBullet -= 1;
 				}
-
-				std::cout << "player upinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveUp << std::endl;
+				else if (playerInput[threadnum].shootInput != PlayerShootType::None && !isCharging[threadnum] &&
+					gameSceneData.playerState[threadnum].remainBullet > 0) {
+					isCharging[threadnum] = true;
+					shootDir[threadnum] = playerInput[threadnum].shootInput;
+				}
+				/*std::cout << "player upinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveUp << std::endl;
 				std::cout << "player downinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveDown << std::endl;
 				std::cout << "player leftinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveLeft << std::endl;
-				std::cout << "player rightinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveRight << std::endl;
+				std::cout << "player rightinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveRight << std::endl;*/
 				break;
 
 			default:
@@ -296,10 +323,15 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 	DWORD lastTime = timeGetTime();
 	DWORD currTime;
-	float Delta = 0;
 
+	float delta = 0;
 	float x, y;
+	float addBulletTimer[MAX_PLAYER_LENGTH] = { 0, };
+	float mobTimer = 0;
+	std::vector<float> mobActiveTimer;
+	std::vector<int> mobtarget;
 
+	float moveVal = 0;
 	while (true) {
 		if (isPlay) {
 			if (isStart) { // 시작 2초 후부터 업데이트 
@@ -320,10 +352,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 			//Deltatime
 			currTime = timeGetTime();
-			Delta = (currTime - lastTime) * 0.001f;
+			delta = (currTime - lastTime) * 0.001f;
 
-			if (Delta >= 1.f / FPS) {
-
+			if (delta >= 1.f / FPS) {
 				// 플레이어
 				// move
 				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
@@ -331,102 +362,153 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 					if (isConnect[i]) {
 						x = gameSceneData.playerState[i].positionX;
 						y = gameSceneData.playerState[i].positionY;
-
-						if (playerInput[i].isPressedMoveUp && y > PLAYER_SPEED) {
-							y -= PLAYER_SPEED;
+						moveVal = PLAYER_MOVE_SPEED_PER_SECOND * delta;
+						if (playerInput[i].isPressedMoveUp && y > moveVal) {
+							y -= moveVal;
 						}
-						if (playerInput[i].isPressedMoveDown && y < WINDOWSIZEY - PLAYER_SPEED) {
-							y += PLAYER_SPEED;
+						if (playerInput[i].isPressedMoveDown && y < MAP_SIZE_Y - moveVal) {
+							y += moveVal;
 						}
-						if (playerInput[i].isPressedMoveLeft && x > PLAYER_SPEED) {
-							x -= PLAYER_SPEED;
-						}
-						if (playerInput[i].isPressedMoveRight && x < WINDOWSIZEX - PLAYER_SPEED) {
-							x += PLAYER_SPEED;
+						// 블럭 이동 가능 여부
+						if (!gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y)][(int)(x / BLOCK_SIZE_X)]) {
+							gameSceneData.playerState[i].positionY = y;
 						}
 
-						gameSceneData.playerState[i].positionX = x;
-						gameSceneData.playerState[i].positionY = y;
+						if (playerInput[i].isPressedMoveLeft && x > moveVal) {
+							x -= moveVal;
+						}
+						if (playerInput[i].isPressedMoveRight && x < MAP_SIZE_X - moveVal) {
+							x += moveVal;
+						}
+						if (!gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y)][(int)(x / BLOCK_SIZE_X)]) {
+							gameSceneData.playerState[i].positionX = x;
+						}
+
+						if (isCharging[i]) {
+							chargingTime[i] += delta;
+						}
+						else {
+							chargingTime[i] = 0;
+						}
+
+						if (gameSceneData.playerState[i].remainBullet < 6) {
+							addBulletTimer[i] += delta;
+							if (addBulletTimer[i] > BULLET_REGEN_SECOND) {
+								gameSceneData.playerState[i].remainBullet += 1;
+								addBulletTimer[i] = 0;
+							}
+						}
 					}
 				}
 
 				//	총알
-				//	메시지
-				//	충돌 - 몹 : 몹 폭발 및 총알 삭제
-				//	- 블럭 : 블럭 상태 변경 및 총알 삭제
-
 				if (!bulletDatas.empty()) {
-
 					for (size_t i = 0; i < bulletDatas.size(); i++)
 					{
-						// 총알 생성 인풋에서
-						// 범위 벗어나면 총알 삭제
-						x = bulletDatas.at(i).positionX;
-						y = bulletDatas.at(i).positionY;
-						switch (bulletDatas.at(i).shootDirection)
+						//	충돌 - 몹 : 몹 폭발 및 총알 삭제, 폭발 이벤트 메시지
+
+						for (size_t j = 0; j < mobDatas.size(); j++)
+						{
+							if (Collision(mobDatas[j].positionX, bulletDatas[i].positionX,
+								mobDatas[j].positionY, bulletDatas[i].positionY, BULLET_SIZE_X, PLAYER_SIZE_X)) {
+								mobDatas.erase(mobDatas.begin() + j);
+								// 폭발 위치 저장 및 메시지 전송
+								break;
+							}
+						}
+
+						x = bulletDatas[i].positionX / BLOCK_SIZE_X;
+						y = bulletDatas[i].positionY / BLOCK_SIZE_Y;
+						if (gameSceneData.mapData.blockState[(int)y][(int)x]) {
+							gameSceneData.mapData.blockState[(int)y][(int)x] = false;
+							//bulletDatas.erase(bulletDatas.begin() + i); // 블럭 관통
+						}
+
+						// 총알 이동
+						x = bulletDatas[i].positionX;
+						y = bulletDatas[i].positionY;
+						moveVal = BULLET_MOVE_SPEED_PER_SECOND * delta;
+						switch (bulletDatas[i].shootDirection)
 						{
 						case PlayerShootType::ShootUp:
-							y -= BULLET_SPEED;
+							y -= moveVal;
 							break;
 						case PlayerShootType::ShootDown:
-							y += BULLET_SPEED;
+							y += moveVal;
 							break;
 						case PlayerShootType::ShootLeft:
-							x -= BULLET_SPEED;
+							x -= moveVal;
 							break;
 						case PlayerShootType::ShootRight:
-							x += BULLET_SPEED;
+							x += moveVal;
 							break;
 						default:
 							break;
 						}
-						bulletDatas.at(i).positionX = x;
-						bulletDatas.at(i).positionY = y;
-						
 
-						if (bulletDatas.at(i).positionX < 0 || bulletDatas.at(i).positionX > WINDOWSIZEX ||
-							bulletDatas.at(i).positionY < 0 || bulletDatas.at(i).positionY > WINDOWSIZEY) {
+						bulletDatas[i].positionX = x;
+						bulletDatas[i].positionY = y;
+
+						if (bulletDatas[i].positionX < 0 || bulletDatas[i].positionX > MAP_SIZE_X ||
+							bulletDatas[i].positionY < 0 || bulletDatas[i].positionY > MAP_SIZE_Y) {
 							bulletDatas.erase(bulletDatas.begin() + i);
 							break;
 						}
-				
 					}
+
 				}
 
 
-				//BLOCK_SIZE_X
-				//BLOCK_SIZE_Y
-				//BULLET_SIZE_X
-				//BULLET_SIZE_Y
-				//PLAYER_SIZE_X
-				//PLAYER_SIZE_Y
+
+				//  몹 생성
+				mobTimer += delta;
+				if (mobTimer > 3) { // 몹 리젠시간, 방식 정하기
+					mobTimer = 0;
+					MobData* m = new MobData;
+					m->isSpecialMob = false;
+					m->positionX = rand() % MAP_SIZE_X;
+					m->positionY = rand() % MAP_SIZE_Y;
+					mobDatas.push_back(*m);
+					mobActiveTimer.push_back(0);
+					mobtarget.push_back(0);
+				}
 
 				//	몹
-				//	메시지
-				//	몹 위치의 블럭 막기
-				//	충돌 - 플레이어 : 플레이어 사망, 목숨 카운트 감소
-				//	- 총알 : 몹 삭제 및 폭발 이벤트
+				for (size_t i = 0; i < mobDatas.size(); i++)
+				{
+					for (size_t j = 0; j < MAX_PLAYER_LENGTH; j++)
+					{
+						// 각 플레이어 까지의 거리 계산
 
-				//	이동 - 각 플레이어 까지의 거리 계산 후 가까운 플레이어 위치로
+						// 거리가 더 가까울 경우
+						//mobtarget[i] = j;
+					}
 
+					mobActiveTimer[i] += delta;
+					if (mobActiveTimer[i] > 1) {
+						// 이동
+						x = mobDatas[i].positionX;
+						y = mobDatas[i].positionY;
+						moveVal = (PLAYER_MOVE_SPEED_PER_SECOND / 2) * delta;
 
+						if (x > moveVal) {
+							x -= moveVal;
+							mobDatas[i].positionX = x;
+						}
 
-				//// mob
-				//for (auto m : mobDatas) {
-				//	// 포지션 / 사이즈 위치 블럭 true로 변경
-				//	x = m.positionX / BLOCK_SIZE_X;
-				//	y = m.positionY / BLOCK_SIZE_Y;
+						// 몹 위치 블럭 막기
+						x = mobDatas[i].positionX / BLOCK_SIZE_X;
+						y = mobDatas[i].positionY / BLOCK_SIZE_Y;
+						gameSceneData.mapData.blockState[(int)y][(int)x] = true;
+					}
 
-				//	// 이동 - 가까운 플레이어에게 이동
+					//	충돌 - 플레이어 : 플레이어 사망, 목숨 카운트 감소
+					//	- 총알 : 몹 삭제 및 폭발 이벤트
+				}
 
-				//	// 충돌 
-				//	// 몹, 플레이어 충돌 - 플레이어 라이프 감소
-				//	// 몹, 총알 충돌 - 몹 삭제 처리
-
-				//}
 
 				lastTime = currTime;
-				for (size_t i = 0; i < 4; i++)
+				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 				{
 					isSend[i] = true; // 업데이트 후 메시지 전송
 				}
@@ -436,7 +518,8 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 		if (connectedCount == 0) {
 			isPlay = false;
-
+			bulletDatas.clear();
+			mobDatas.clear();
 		}
 	}
 	return 0;
