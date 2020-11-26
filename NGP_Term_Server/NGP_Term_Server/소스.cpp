@@ -126,6 +126,23 @@ void SendtoAll(NetGameMessage sendmessage) {
 	}
 }
 
+bool Collision(float px1, float px2, float py1, float py2, float s1, float s2) {
+	if ((px1 - s1) > (px2 + s2)) {
+		return false;
+	}
+	if ((py1 - s1) > (py2 + s2)) {
+		return false;
+	}
+	if ((px2 - s2) > (px1 + s1)) {
+		return false;
+	}
+	if ((py2 - s2) > (py1 + s1)) {
+		return false;
+	}
+
+	return true;
+}
+
 
 DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	int retval;
@@ -264,7 +281,8 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 					isCharging[threadnum] = false;
 					gameSceneData.playerState[threadnum].remainBullet -= 1;
 				}
-				else if (playerInput[threadnum].shootInput != PlayerShootType::None && !isCharging[threadnum]) {
+				else if (playerInput[threadnum].shootInput != PlayerShootType::None && !isCharging[threadnum] &&
+					gameSceneData.playerState[threadnum].remainBullet > 0) {
 					isCharging[threadnum] = true;
 					shootDir[threadnum] = playerInput[threadnum].shootInput;
 				}
@@ -390,11 +408,27 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				}
 
 				//	총알
-				
-
 				if (!bulletDatas.empty()) {
 					for (size_t i = 0; i < bulletDatas.size(); i++)
 					{
+						//	충돌 - 몹 : 몹 폭발 및 총알 삭제, 폭발 이벤트 메시지
+
+						for (size_t j = 0; j < mobDatas.size(); j++)
+						{
+							if (Collision(mobDatas[j].positionX, bulletDatas[i].positionX,
+								mobDatas[j].positionY, bulletDatas[i].positionY, BULLET_SIZE_X, PLAYER_SIZE_X)) {
+								mobDatas.erase(mobDatas.begin() + j);
+								break;
+							}
+						}
+
+						x = bulletDatas[i].positionX / BLOCK_SIZE_X;
+						y = bulletDatas[i].positionY / BLOCK_SIZE_Y;
+						if (gameSceneData.mapData.blockState[(int)y][(int)x]) {
+							gameSceneData.mapData.blockState[(int)y][(int)x] = false;
+							//bulletDatas.erase(bulletDatas.begin() + i); // 블럭 관통
+						}
+
 						// 총알 이동
 						x = bulletDatas[i].positionX;
 						y = bulletDatas[i].positionY;
@@ -416,6 +450,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						default:
 							break;
 						}
+
 						bulletDatas[i].positionX = x;
 						bulletDatas[i].positionY = y;
 
@@ -424,20 +459,12 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 							bulletDatas.erase(bulletDatas.begin() + i);
 							break;
 						}
-
-						x = bulletDatas[i].positionX / BLOCK_SIZE_X;
-						y = bulletDatas[i].positionY / BLOCK_SIZE_Y;
-						if (gameSceneData.mapData.blockState[(int)y][(int)x]) {
-							gameSceneData.mapData.blockState[(int)y][(int)x] = false;
-							bulletDatas.erase(bulletDatas.begin() + i); // 총알 관통x
-							break;
-						}
 					}
-					//	충돌 - 몹 : 몹 폭발 및 총알 삭제, 폭발 이벤트 메시지
+
 				}
 
 
-				
+
 				//  몹 생성
 				mobTimer += delta;
 				if (mobTimer > 3) {
@@ -456,14 +483,23 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				{
 					for (size_t j = 0; j < MAX_PLAYER_LENGTH; j++)
 					{
-						//	이동 - 각 플레이어 까지의 거리 계산
+						// 각 플레이어 까지의 거리 계산
+
 						// 거리가 더 가까울 경우
-						mobtarget[i] = j;
+						//mobtarget[i] = j;
 					}
-					
-					mobActiveTimer[i] += delta; 
+
+					mobActiveTimer[i] += delta;
 					if (mobActiveTimer[i] > 1) {
-						// 타겟 방향으로 이동
+						// 이동
+						x = mobDatas[i].positionX;
+						y = mobDatas[i].positionY;
+						moveVal = (PLAYER_MOVE_SPEED_PER_SECOND / 2) * delta;
+
+						if (x > moveVal) {
+							x -= moveVal;
+							mobDatas[i].positionX = x;
+						}
 
 						// 몹 위치 블럭 막기
 						x = mobDatas[i].positionX / BLOCK_SIZE_X;
@@ -474,7 +510,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 					//	충돌 - 플레이어 : 플레이어 사망, 목숨 카운트 감소
 					//	- 총알 : 몹 삭제 및 폭발 이벤트
 				}
-				
+
 
 				lastTime = currTime;
 				for (size_t i = 0; i < 4; i++)
