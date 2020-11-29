@@ -20,6 +20,8 @@ struct InversusNetworkController
 	MobDatas mobData;
 	BulletDatas bulletData;
 	PlayerInput input;
+	EventDatas explosionDatas;
+	EventDatas spawnDatas;
 	bool startGame = false;
 	void InitlizeWithSocket( ClientSocketManager* socket );
 	void Reset();
@@ -30,6 +32,8 @@ struct InversusNetworkController
 	void RefreshBulletData();
 	void RefreshMapData();
 	void RefreshMobData();
+	void UpdateExplosionData();
+	//void UpdateSpawnData();
 	void GetPlayerInput();
 	void SendPlayerInput();
 };

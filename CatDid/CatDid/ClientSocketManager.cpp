@@ -105,12 +105,12 @@ void ClientSocketManager::SendCancelReadyMsg()
 
 void ClientSocketManager::SendPlayerInput( const PlayerInput& input )
 {
-	std::cout << "Send Player Input : "
-		<< std::boolalpha << input.isPressedMoveUp << ","
-		<< std::boolalpha << input.isPressedMoveDown << ","
-		<< std::boolalpha << input.isPressedMoveLeft << ","
-		<< std::boolalpha << input.isPressedMoveRight
-		<< std::endl;
+	//std::cout << "Send Player Input : "
+	//	<< std::boolalpha << input.isPressedMoveUp << ","
+	//	<< std::boolalpha << input.isPressedMoveDown << ","
+	//	<< std::boolalpha << input.isPressedMoveLeft << ","
+	//	<< std::boolalpha << input.isPressedMoveRight
+	//	<< std::endl;
 	this->Send( NetGameMessageType::MSG_PLAYER_INPUT, 1, (void*)&input );
 }
 
@@ -343,7 +343,7 @@ void ClientSocketManager::OnRecvEventExplosion()
 	if ( this->variables.expData.isChange == true )
 	{
 		this->variables.expData.isChange = false;
-		this->recvEventExplosionFunction( this->variables.spawnData.data );
+		this->recvEventExplosionFunction( this->variables.expData.data );
 	}
 	this->variables.expData.End();
 }

@@ -10,11 +10,8 @@
 #define BLOCK_COUNT_Y 19 // 11.21 수정 단위 갯수, 맵에서 블럭 가로,세로 개수
 #define BLOCK_SIZE_X 40 // 11.21 수정 단위 px , 블럭의 픽셀 크기
 #define BLOCK_SIZE_Y 40 // 11.21 수정 단위 px , 블럭의 픽셀 크기
-#define BULLET_SIZE_X 8 //11.21 추가 : 총알 사이즈 
-#define BULLET_SIZE_Y 8 //11.21 추가 : 총알 사이즈 
-#define PLAYER_SIZE_X 25 //11.21 추가 : 플레이어, 적 사이즈
-#define PLAYER_SIZE_Y 25 //11.21 추가 : 플레이어, 적 사이즈
-#define EXPLOSION_SIZE 3 //11.21 추가 : 폭발 블럭 갯수 (3x3) 블럭
+#define BULLET_SIZE 8 //11.21 추가 : 총알 사이즈 
+#define PLAYER_SIZE 25 //11.21 추가 : 플레이어, 적 사이즈
 #define EXPLOSION_SIZE 3 //11.21 추가 : 폭발 블럭 갯수 (3x3) 블럭
 #define MAP_SIZE_X (BLOCK_COUNT_X * BLOCK_SIZE_X) //단위 px, 맵 전체 픽셀 크기
 #define MAP_SIZE_Y (BLOCK_COUNT_Y * BLOCK_SIZE_Y) //단위 px, 맵 전체 픽셀 크기
@@ -150,6 +147,8 @@ inline UINT GetMessageParameterSize( NetGameMessageType type )
 	case MSG_BULLET_DATA: return sizeof( BulletData );
 	case MSG_MOB_DATA: return sizeof( MobData );
 	case MSG_PLAYER_INPUT: return sizeof( PlayerInput );
+	case MSG_EVENT_EXPLOSION: return sizeof( EventParameter );
+	case MSG_EVENT_SPAWN: return sizeof( EventParameter );
 	}
 }
 
@@ -171,6 +170,8 @@ inline const char* GetMessageString( NetGameMessageType type )
 	case MSG_BULLET_DATA: return TOSTRING( MSG_BULLET_DATA );
 	case MSG_MOB_DATA: return TOSTRING( MSG_MOB_DATA );
 	case MSG_PLAYER_INPUT: return TOSTRING( MSG_PLAYER_INPUT );
+	case MSG_EVENT_EXPLOSION: return TOSTRING( MSG_EVENT_EXPLOSION );
+	case MSG_EVENT_SPAWN: return TOSTRING( MSG_EVENT_SPAWN );
 	default:
 		return "MSG_ERROR_NOT_DEFINED";
 	}
@@ -191,6 +192,8 @@ inline UINT GetMessageParameterCount( NetGameMessageType type, UINT parameterSiz
 	case MSG_BULLET_DATA: return parameterSize / sizeof( BulletData );
 	case MSG_MOB_DATA: return parameterSize / sizeof( MobData );
 	case MSG_PLAYER_INPUT: return parameterSize / sizeof( PlayerInput );
+	case MSG_EVENT_EXPLOSION: return parameterSize / sizeof( EventParameter );
+	case MSG_EVENT_SPAWN: return parameterSize / sizeof( EventParameter );
 	}
 }
 

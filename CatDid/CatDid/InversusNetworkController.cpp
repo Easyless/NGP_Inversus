@@ -11,9 +11,9 @@ void InversusNetworkController::InitlizeWithSocket( ClientSocketManager* socket 
 	{
 		this->startGame = true;
 	};
-	
+
 	this->socket->recvSceneDataFunction =
-		[this](const GameSceneData& sceneData)
+		[this]( const GameSceneData& sceneData )
 	{
 		this->sceneData = sceneData;
 	};
@@ -30,14 +30,17 @@ void InversusNetworkController::InitlizeWithSocket( ClientSocketManager* socket 
 	this->socket->recvGameEndFunction =
 		[]()
 	{
+
 	};
 	this->socket->recvEventExplosionFunction =
-		[](const EventDatas& datas)
+		[this]( const EventDatas& datas )
 	{
+		this->explosionDatas = datas;
 	};
 	this->socket->recvEventSpawnFunction =
-		[]( const EventDatas& datas )
+		[this]( const EventDatas& datas )
 	{
+		this->spawnDatas = datas;
 	};
 }
 
@@ -59,6 +62,7 @@ void InversusNetworkController::Update( float deltaTime )
 		this->RefreshBulletData();
 		this->RefreshMobData();
 		this->RefreshMapData();
+		this->UpdateExplosionData();
 		this->GetPlayerInput();
 		this->SendPlayerInput();
 	}
@@ -85,7 +89,7 @@ static Vec2DF GetShootDirection( PlayerShootType type )
 	switch ( type )
 	{
 	case None:
-		return Vec2DF(0,0);
+		return Vec2DF( 0, 0 );
 	case ShootUp:
 		return Vec2DF::Up();
 	case ShootDown:
@@ -113,7 +117,19 @@ void InversusNetworkController::RefreshMapData()
 
 void InversusNetworkController::RefreshMobData()
 {
-	this->framework->container->RefreshEnemyFromData( this->mobData);
+	this->framework->container->RefreshEnemyFromData( this->mobData );
+}
+
+void InversusNetworkController::UpdateExplosionData()
+{
+	for ( auto& e : this->explosionDatas )
+	{
+		this->framework->container->AddExplosion( 
+			Vec2DF( e.positionX, e.positionY ),
+			RGB( 0, 0, 0 ),
+			false );
+	}
+	this->explosionDatas.clear();
 }
 
 void InversusNetworkController::GetPlayerInput()
@@ -147,7 +163,7 @@ void InversusNetworkController::GetPlayerInput()
 	{
 		input.shootInput = PlayerShootType::ShootRight;
 	}
-	else 
+	else
 	{
 		input.shootInput = PlayerShootType::None;
 	}

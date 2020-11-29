@@ -74,17 +74,17 @@ void InversusContainer::CollectGarbage()
 	//	}
 	//}
 
-	for ( auto i = this->explosionEffect.begin(); i != this->explosionEffect.end(); )
-	{
-		if ( i->IsDestroy() )
-		{
-			i = this->explosionEffect.erase( i );
-		}
-		else
-		{
-			++i;
-		}
-	}
+	//for ( auto i = this->explosionEffect.begin(); i != this->explosionEffect.end(); )
+	//{
+	//	if ( i->IsDestroy() )
+	//	{
+	//		i = this->explosionEffect.erase( i );
+	//	}
+	//	else
+	//	{
+	//		++i;
+	//	}
+	//}
 }
 
 Vec2DF InversusContainer::GetGameDisplaySize() const
