@@ -31,7 +31,6 @@ bool isConnect[MAX_PLAYER_LENGTH] = { false, false, false, false };
 bool isPlay = false;
 bool isStart = false;
 
-
 bool isSend[MAX_PLAYER_LENGTH] = { false, };
 bool isCharging[MAX_PLAYER_LENGTH] = { false, };
 PlayerShootType shootDir[MAX_PLAYER_LENGTH] = { None, };
@@ -42,8 +41,8 @@ WaitRoomData waitRoomData;
 GameSceneData gameSceneData;
 std::vector<BulletData> bulletDatas;
 std::vector<MobData> mobDatas;
-EventParameter eventParameter;
 PlayerInput playerInput[MAX_PLAYER_LENGTH];
+EventParameter eventParameter;
 int connectedCount = 0;
 
 void InitSceneData() {
@@ -105,6 +104,7 @@ int recvn(SOCKET s, char* buf, int len, int flags)
 
 
 void SendtoAll(NetGameMessage sendmessage) {
+	EnterCriticalSection(&cs);
 	for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 	{
 		if (isConnect[i]) {
@@ -112,13 +112,22 @@ void SendtoAll(NetGameMessage sendmessage) {
 			switch (sendmessage.type) {
 			case MSG_WAIT_ROOM_DATA:
 				send(connectedSocket[i], (char*)&waitRoomData, sizeof(WaitRoomData), 0);
-				std::cout << "sendtoall waitroomdata" << std::endl;
+				std::cout << "send MSG_WAIT_ROOM_DATA" << std::endl;
+				break;
+			case MSG_EVENT_EXPLOSION:
+				send(connectedSocket[i], (char*)&eventParameter, sizeof(EventParameter), 0);
+				std::cout << "send MSG_EVENT_EXPLOSION" << std::endl;
+				break;
+			case MSG_EVENT_SPAWN:
+				send(connectedSocket[i], (char*)&eventParameter, sizeof(EventParameter), 0);
+				std::cout << "send MSG_EVENT_SPAWN" << std::endl;
 				break;
 			default:
 				break;
 			}
 		}
 	}
+	LeaveCriticalSection(&cs);
 }
 
 bool Collision(float px1, float px2, float py1, float py2, float s1, float s2) {
@@ -138,6 +147,9 @@ bool Collision(float px1, float px2, float py1, float py2, float s1, float s2) {
 	return true;
 }
 
+float Distance(float px1, float px2, float py1, float py2) {
+	return (px1 - px2) * (px1 - px2) + (py1 - py2) * (py1 - py2);
+}
 
 DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	int retval;
@@ -182,6 +194,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			case MSG_SCENE_DATA:
 				retval = send(client_sock, (char*)&gameSceneData, sizeof(GameSceneData), 0);
 				//std::cout << "send scene data" << std::endl;
+				EnterCriticalSection(&cs);
 				sendmessage.type = MSG_BULLET_DATA;
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * bulletDatas.size();
 				retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
@@ -190,6 +203,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * mobDatas.size();
 				retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
 				retval = send(client_sock, (char*)mobDatas.data(), sizeof(MobData) * mobDatas.size(), 0);
+				LeaveCriticalSection(&cs);
 				//SendtoAll(sendmessage);
 				break;
 			case MSG_BULLET_DATA:
@@ -264,22 +278,24 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			case NetGameMessageType::MSG_PLAYER_INPUT:
 				retval = recvn(client_sock, (char*)&playerInput[threadnum], datasize, 0);
 				// 받은 인풋 상태 저장, 업데이트에 영향
-				if (playerInput[threadnum].shootInput == PlayerShootType::None && isCharging[threadnum] &&
-					gameSceneData.playerState[threadnum].remainBullet > 0) { // 총알 생성
-					// 차지시간 if
-					BulletData* b = new BulletData;
-					b->ownerPlayer = threadnum;
-					b->positionX = gameSceneData.playerState[threadnum].positionX;
-					b->positionY = gameSceneData.playerState[threadnum].positionY;
-					b->shootDirection = shootDir[threadnum];
-					bulletDatas.push_back(*b);
-					isCharging[threadnum] = false;
-					gameSceneData.playerState[threadnum].remainBullet -= 1;
-				}
-				else if (playerInput[threadnum].shootInput != PlayerShootType::None && !isCharging[threadnum] &&
-					gameSceneData.playerState[threadnum].remainBullet > 0) {
-					isCharging[threadnum] = true;
-					shootDir[threadnum] = playerInput[threadnum].shootInput;
+				if (!gameSceneData.playerState[threadnum].isDead) {
+					if (playerInput[threadnum].shootInput == PlayerShootType::None && isCharging[threadnum] &&
+						gameSceneData.playerState[threadnum].remainBullet > 0) { // 총알 생성
+						// 차지시간 if
+						BulletData* b = new BulletData;
+						b->ownerPlayer = threadnum;
+						b->positionX = gameSceneData.playerState[threadnum].positionX;
+						b->positionY = gameSceneData.playerState[threadnum].positionY;
+						b->shootDirection = shootDir[threadnum];
+						bulletDatas.push_back(*b);
+						isCharging[threadnum] = false;
+						gameSceneData.playerState[threadnum].remainBullet -= 1;
+					}
+					else if (playerInput[threadnum].shootInput != PlayerShootType::None && !isCharging[threadnum] &&
+						gameSceneData.playerState[threadnum].remainBullet > 0) {
+						isCharging[threadnum] = true;
+						shootDir[threadnum] = playerInput[threadnum].shootInput;
+					}
 				}
 				/*std::cout << "player upinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveUp << std::endl;
 				std::cout << "player downinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveDown << std::endl;
@@ -324,11 +340,13 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 	DWORD lastTime = timeGetTime();
 	DWORD currTime;
 
-	float delta = 0;
+	float minDistance = -1;
 	float x, y;
+	float delta = 0;
 	float addBulletTimer[MAX_PLAYER_LENGTH] = { 0, };
 	float mobTimer = 0;
 	std::vector<float> mobActiveTimer;
+	float playerActiveTimer[4];
 	std::vector<int> mobtarget;
 
 	float moveVal = 0;
@@ -357,47 +375,92 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 			if (delta >= 1.f / FPS) {
 				// 플레이어
 				// move
+				EnterCriticalSection(&cs);
 				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 				{
 					if (isConnect[i]) {
-						x = gameSceneData.playerState[i].positionX;
-						y = gameSceneData.playerState[i].positionY;
-						moveVal = PLAYER_MOVE_SPEED_PER_SECOND * delta;
-						if (playerInput[i].isPressedMoveUp && y > moveVal) {
-							y -= moveVal;
-						}
-						if (playerInput[i].isPressedMoveDown && y < MAP_SIZE_Y - moveVal) {
-							y += moveVal;
-						}
-						// 블럭 이동 가능 여부
-						if (!gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y)][(int)(x / BLOCK_SIZE_X)]) {
-							gameSceneData.playerState[i].positionY = y;
-						}
+						if (gameSceneData.playerState[i].isDead) {
+							playerActiveTimer[i] += delta;
+							if (playerActiveTimer[i] > 3) {
+								// 주변 적 폭발 처리
+								for (size_t j = 0; j < mobDatas.size(); j++)
+								{
+									if (Collision(mobDatas[j].positionX, gameSceneData.playerState[i].positionX,
+										mobDatas[j].positionY, gameSceneData.playerState[i].positionY,
+										PLAYER_SIZE, PLAYER_SIZE * EXPLOSION_SIZE)) {
+										mobDatas.erase(mobDatas.begin() + j);
 
-						if (playerInput[i].isPressedMoveLeft && x > moveVal) {
-							x -= moveVal;
-						}
-						if (playerInput[i].isPressedMoveRight && x < MAP_SIZE_X - moveVal) {
-							x += moveVal;
-						}
-						if (!gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y)][(int)(x / BLOCK_SIZE_X)]) {
-							gameSceneData.playerState[i].positionX = x;
-						}
+										eventParameter.positionX = mobDatas[j].positionX;
+										eventParameter.positionY = mobDatas[j].positionY;
+										if (mobDatas[j].isSpecialMob)
+											eventParameter.owner = SpecialMob;
+										else
+											eventParameter.owner = NormalMob;
+										NetGameMessage message;
+										message.type = MSG_EVENT_EXPLOSION;
+										message.parameterSize = sizeof(EventParameter);
+										SendtoAll(message);
+										j = j - 1;
+									}
+								}
+								x = gameSceneData.playerState[i].positionX;
+								y = gameSceneData.playerState[i].positionY;
 
-						if (isCharging[i]) {
-							chargingTime[i] += delta;
-						}
-						else {
-							chargingTime[i] = 0;
-						}
-
-						if (gameSceneData.playerState[i].remainBullet < 6) {
-							addBulletTimer[i] += delta;
-							if (addBulletTimer[i] > BULLET_REGEN_SECOND) {
-								gameSceneData.playerState[i].remainBullet += 1;
-								addBulletTimer[i] = 0;
+								for (int h = -1; h < 2; h++)
+								{
+									for (int v = -1; v < 2; v++)
+									{
+										if((int)(y / BLOCK_SIZE_Y) + h >= 0 && (int)(y / BLOCK_SIZE_Y) + h < MAP_SIZE_Y &&
+											(int)(x / BLOCK_SIZE_X) + v >= 0 && (int)(x / BLOCK_SIZE_X) + v < MAP_SIZE_X)
+										gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y) + h][(int)(x / BLOCK_SIZE_X) + v] = false;
+									}
+								}
+								
+								gameSceneData.playerState[i].isDead = false;
+								playerActiveTimer[i] = 0;
 							}
 						}
+						else {
+							x = gameSceneData.playerState[i].positionX;
+							y = gameSceneData.playerState[i].positionY;
+							moveVal = PLAYER_MOVE_SPEED_PER_SECOND * delta;
+							if (playerInput[i].isPressedMoveUp && y > moveVal) {
+								y -= moveVal;
+							}
+							if (playerInput[i].isPressedMoveDown && y < MAP_SIZE_Y - moveVal) {
+								y += moveVal;
+							}
+							// 블럭 이동 가능 여부
+							if (!gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y)][(int)(x / BLOCK_SIZE_X)]) {
+								gameSceneData.playerState[i].positionY = y;
+							}
+
+							if (playerInput[i].isPressedMoveLeft && x > moveVal) {
+								x -= moveVal;
+							}
+							if (playerInput[i].isPressedMoveRight && x < MAP_SIZE_X - moveVal) {
+								x += moveVal;
+							}
+							if (!gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y)][(int)(x / BLOCK_SIZE_X)]) {
+								gameSceneData.playerState[i].positionX = x;
+							}
+
+							if (isCharging[i]) {
+								chargingTime[i] += delta;
+							}
+							else {
+								chargingTime[i] = 0;
+							}
+
+							if (gameSceneData.playerState[i].remainBullet < 6) {
+								addBulletTimer[i] += delta;
+								if (addBulletTimer[i] > BULLET_REGEN_SECOND) {
+									gameSceneData.playerState[i].remainBullet += 1;
+									addBulletTimer[i] = 0;
+								}
+							}
+						}
+
 					}
 				}
 
@@ -406,14 +469,39 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 					for (size_t i = 0; i < bulletDatas.size(); i++)
 					{
 						//	충돌 - 몹 : 몹 폭발 및 총알 삭제, 폭발 이벤트 메시지
-
 						for (size_t j = 0; j < mobDatas.size(); j++)
 						{
-							if (Collision(mobDatas[j].positionX, bulletDatas[i].positionX,
-								mobDatas[j].positionY, bulletDatas[i].positionY, BULLET_SIZE_X, PLAYER_SIZE_X)) {
-								mobDatas.erase(mobDatas.begin() + j);
-								// 폭발 위치 저장 및 메시지 전송
-								break;
+							if (mobActiveTimer[j] > 1) {
+								if (Collision(mobDatas[j].positionX, bulletDatas[i].positionX,
+									mobDatas[j].positionY, bulletDatas[i].positionY, BULLET_SIZE, PLAYER_SIZE)) {
+									mobDatas.erase(mobDatas.begin() + j);
+
+									eventParameter.positionX = mobDatas[j].positionX;
+									eventParameter.positionY = mobDatas[j].positionY;
+									if (mobDatas[j].isSpecialMob)
+										eventParameter.owner = SpecialMob;
+									else
+										eventParameter.owner = NormalMob;
+									NetGameMessage message;
+									message.type = MSG_EVENT_EXPLOSION;
+									message.parameterSize = sizeof(EventParameter);
+									SendtoAll(message);
+									// 폭발 위치 저장 및 메시지 전송
+
+									x = mobDatas[j].positionX;
+									y = mobDatas[j].positionY;
+									for (int h = -1; h < 2; h++)
+									{
+										for (int v = -1; v < 2; v++)
+										{
+											if ((int)(y / BLOCK_SIZE_Y) + h >= 0 && (int)(y / BLOCK_SIZE_Y) + h < MAP_SIZE_Y &&
+												(int)(x / BLOCK_SIZE_X) + v >= 0 && (int)(x / BLOCK_SIZE_X) + v < MAP_SIZE_X)
+												gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y) + h][(int)(x / BLOCK_SIZE_X) + v] = false;
+										}
+									}
+
+									break;
+								}
 							}
 						}
 
@@ -459,7 +547,6 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				}
 
 
-
 				//  몹 생성
 				mobTimer += delta;
 				if (mobTimer > 3) { // 몹 리젠시간, 방식 정하기
@@ -471,6 +558,17 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 					mobDatas.push_back(*m);
 					mobActiveTimer.push_back(0);
 					mobtarget.push_back(0);
+
+					eventParameter.positionX = m->positionX;
+					eventParameter.positionY = m->positionY;
+					if (m->isSpecialMob)
+						eventParameter.owner = SpecialMob;
+					else
+						eventParameter.owner = NormalMob;
+					NetGameMessage message;
+					message.type = MSG_EVENT_SPAWN;
+					message.parameterSize = sizeof(EventParameter);
+					SendtoAll(message);
 				}
 
 				//	몹
@@ -478,10 +576,27 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				{
 					for (size_t j = 0; j < MAX_PLAYER_LENGTH; j++)
 					{
+						x = Distance(mobDatas[i].positionX, gameSceneData.playerState[j].positionX,
+							mobDatas[i].positionY, gameSceneData.playerState[j].positionY);
 						// 각 플레이어 까지의 거리 계산
+						if (minDistance != -1 || x < minDistance) {
+							minDistance = x;
+							mobtarget[i] = j;
+						}
 
-						// 거리가 더 가까울 경우
-						//mobtarget[i] = j;
+						if (!gameSceneData.playerState[j].isDead &&
+							Collision(mobDatas[i].positionX, gameSceneData.playerState[j].positionX,
+								mobDatas[i].positionY, gameSceneData.playerState[j].positionY, PLAYER_SIZE, PLAYER_SIZE)) {
+							gameSceneData.leftLifeCount--;
+							eventParameter.positionX = gameSceneData.playerState[j].positionX;
+							eventParameter.positionY = gameSceneData.playerState[j].positionY;
+							eventParameter.owner = PLAYER;
+							NetGameMessage message;
+							message.type = MSG_EVENT_EXPLOSION;
+							message.parameterSize = sizeof(EventParameter);
+							SendtoAll(message);
+							gameSceneData.playerState[j].isDead = true;
+						}
 					}
 
 					mobActiveTimer[i] += delta;
@@ -501,11 +616,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						y = mobDatas[i].positionY / BLOCK_SIZE_Y;
 						gameSceneData.mapData.blockState[(int)y][(int)x] = true;
 					}
-
-					//	충돌 - 플레이어 : 플레이어 사망, 목숨 카운트 감소
-					//	- 총알 : 몹 삭제 및 폭발 이벤트
 				}
 
+				LeaveCriticalSection(&cs);
 
 				lastTime = currTime;
 				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
