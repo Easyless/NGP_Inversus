@@ -54,7 +54,7 @@ PlayerInput playerInput[MAX_PLAYER_LENGTH];
 int connectedCount = 0;
 
 void InitSceneData() {
-	gameSceneData.leftLifeCount = 3;
+	gameSceneData.leftLifeCount = MAX_LIFE_COUNT;
 	gameSceneData.mapData = { false, };
 	for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 	{
@@ -362,6 +362,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 	DWORD lastTime;
 	DWORD currTime;
 
+	NetGameMessage sendmessage;
 	float minDistance = -1;
 	float x, y, tx, ty, val;
 	float delta = 0;
@@ -370,14 +371,13 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 	std::vector<float> mobActiveTimer;
 	float playerActiveTimer[4] = {0,};
 	std::vector<int> mobtarget;
-
 	float moveVal = 0;
 	while (true) {
 		if (isPlay) {
 			if (isStart) { // 시작 2초 후부터 업데이트 
 				InitSceneData();
 				Sleep(2000);
-				NetGameMessage sendmessage;
+				
 				sendmessage.type = MSG_GAME_START;
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
 				SendtoAll(sendmessage);
@@ -394,6 +394,14 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 			//Deltatime
 			currTime = timeGetTime();
 			delta = (currTime - lastTime) * 0.001f;
+			
+			if (gameSceneData.leftLifeCount == 0) {
+				sendmessage.type = MSG_GAME_END;
+				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
+				SendtoAll(sendmessage);
+				isPlay = false;
+				break;
+			}
 			
 			if (delta >= 1.f / FPS) {
 				// 플레이어
@@ -623,7 +631,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 							if (Collision(mobDatas[i].positionX, gameSceneData.playerState[j].positionX,
 									mobDatas[i].positionY, gameSceneData.playerState[j].positionY, PLAYER_SIZE, PLAYER_SIZE)) {
-								gameSceneData.leftLifeCount--;
+								gameSceneData.leftLifeCount = (int)gameSceneData.leftLifeCount - 1;
 
 								EventParameter* ep = new EventParameter;
 								ep->positionX = gameSceneData.playerState[j].positionX;
