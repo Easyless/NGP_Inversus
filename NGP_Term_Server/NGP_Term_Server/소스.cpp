@@ -58,8 +58,8 @@ void InitSceneData() {
 	gameSceneData.mapData = { false, };
 	for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 	{
-		gameSceneData.playerState[i].positionX = i * 50;
-		gameSceneData.playerState[i].positionY = i * 30;
+		gameSceneData.playerState[i].positionX = MAP_SIZE_X / 2;
+		gameSceneData.playerState[i].positionY = MAP_SIZE_Y / 2;
 		gameSceneData.playerState[i].isDead = true;
 	}
 }
@@ -804,6 +804,7 @@ int main(int argc, char* argv[]) {
 		client_sock = accept(listen_sock, (SOCKADDR*)&clientaddr, &addrlen);
 
 		success = false;
+
 		for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 		{
 			if (!isConnect[i] && !isPlay) {
@@ -815,12 +816,12 @@ int main(int argc, char* argv[]) {
 				break;
 			}
 		}
+
 		for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 		{
 			std::cout << isConnect[i] << " ";
 		}
 
-		std::cout << std::endl;
 		// 클라이언트 소켓으로 CommunicationThread 생성
 		if (success && !isPlay) {
 			arg = { client_sock, threadnum };
