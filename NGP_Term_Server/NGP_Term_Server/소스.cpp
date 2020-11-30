@@ -20,6 +20,11 @@ struct Param {
 	int threadnum;
 };
 
+struct RemainExplosion {
+	float timer = 0;
+	EventParameter explosioninfo;
+};
+
 CRITICAL_SECTION cs;
 
 // 이벤트로 스레드 동기화
@@ -40,6 +45,7 @@ SOCKET connectedSocket[MAX_PLAYER_LENGTH] = { NULL, NULL, NULL, NULL };
 WaitRoomData waitRoomData;
 GameSceneData gameSceneData;
 std::vector<EventParameter> explosions;
+std::vector<RemainExplosion> remainExplosions;
 std::vector<EventParameter> spawns;
 std::vector<BulletData> bulletDatas;
 std::vector<MobData> mobDatas;
@@ -417,6 +423,11 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 										else
 											ep->owner = NormalMob;
 										explosions.push_back(*ep);
+
+										RemainExplosion* re = new RemainExplosion;
+										re->explosioninfo = *ep;
+										remainExplosions.push_back(*re);
+
 										mobDatas.erase(mobDatas.begin() + j);
 										j = 0;
 									}
@@ -501,7 +512,10 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 										ep->owner = NormalMob;
 									explosions.push_back(*ep);
 									// 폭발 위치 저장 및 메시지 전송
-									
+									RemainExplosion* re = new RemainExplosion;
+									re->explosioninfo = *ep;
+									remainExplosions.push_back(*re);
+
 									x = mobDatas[j].positionX;
 									y = mobDatas[j].positionY;
 									for (int h = -1; h < 2; h++)
@@ -607,6 +621,10 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 							ep->owner = PLAYER;
 							explosions.push_back(*ep);
 
+							RemainExplosion* re = new RemainExplosion;
+							re->explosioninfo = *ep;
+							remainExplosions.push_back(*re);
+
 							gameSceneData.playerState[j].isDead = true;
 						}
 					}
@@ -632,12 +650,42 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 				// 폭발 시 주변 적도 연쇄폭발
 
-		/*		if (!explosions.empty()) {
-					for (size_t i = 0; i < explosions.size(); i++)
+				if (!remainExplosions.empty()) {
+					for (size_t i = 0; i < remainExplosions.size(); i++)
 					{
-						if()
+						remainExplosions[i].timer += delta;
+
+						if (remainExplosions[i].timer > 1) {
+							remainExplosions.erase(remainExplosions.begin() + i);
+						}
+						else {
+							for (size_t j = 0; j < mobDatas.size(); j++)
+							{
+								if (Collision(mobDatas[j].positionX, remainExplosions[i].explosioninfo.positionX,
+									mobDatas[j].positionY, remainExplosions[i].explosioninfo.positionY,
+									PLAYER_SIZE, PLAYER_SIZE * EXPLOSION_SIZE)) {
+
+									EventParameter* ep = new EventParameter;
+									ep->positionX = mobDatas[j].positionX;
+									ep->positionY = mobDatas[j].positionY;
+									if (mobDatas[j].isSpecialMob)
+										ep->owner = SpecialMob;
+									else
+										ep->owner = NormalMob;
+									explosions.push_back(*ep);
+
+
+									RemainExplosion* re = new RemainExplosion;
+									re->explosioninfo = *ep;
+									remainExplosions.push_back(*re);
+
+									mobDatas.erase(mobDatas.begin() + j);
+									j = 0;
+								}
+							}
+						}
 					}
-				}*/
+				}
 
 				LeaveCriticalSection(&cs);
 
