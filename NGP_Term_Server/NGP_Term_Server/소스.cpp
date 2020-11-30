@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <math.h>
 #include "LowLevelData.h"
 
 #pragma comment(lib, "ws2_32")
@@ -44,9 +45,9 @@ float chargingTime[MAX_PLAYER_LENGTH] = { 0, };
 SOCKET connectedSocket[MAX_PLAYER_LENGTH] = { NULL, NULL, NULL, NULL };
 WaitRoomData waitRoomData;
 GameSceneData gameSceneData;
+std::vector<EventParameter> spawns;
 std::vector<EventParameter> explosions;
 std::vector<RemainExplosion> remainExplosions;
-std::vector<EventParameter> spawns;
 std::vector<BulletData> bulletDatas;
 std::vector<MobData> mobDatas;
 PlayerInput playerInput[MAX_PLAYER_LENGTH];
@@ -295,6 +296,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 
 				// 게임 씬 수신 가능 메시지
 			case NetGameMessageType::MSG_PLAYER_INPUT:
+				EnterCriticalSection(&cs);
 				retval = recvn(client_sock, (char*)&playerInput[threadnum], datasize, 0);
 				// 받은 인풋 상태 저장, 업데이트에 영향
 				if (!gameSceneData.playerState[threadnum].isDead) {
@@ -316,6 +318,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 						shootDir[threadnum] = playerInput[threadnum].shootInput;
 					}
 				}
+				LeaveCriticalSection(&cs);
 				/*std::cout << "player upinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveUp << std::endl;
 				std::cout << "player downinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveDown << std::endl;
 				std::cout << "player leftinput: " << std::boolalpha << playerInput[threadnum].isPressedMoveLeft << std::endl;
@@ -356,11 +359,11 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 }
 
 DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
-	DWORD lastTime = timeGetTime();
+	DWORD lastTime;
 	DWORD currTime;
 
 	float minDistance = -1;
-	float x, y;
+	float x, y, tx, ty, val;
 	float delta = 0;
 	float addBulletTimer[MAX_PLAYER_LENGTH] = { 0, };
 	float mobTimer = 0;
@@ -385,12 +388,13 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						gameSceneData.playerState[i].isDead = false;
 					}
 				}
+				lastTime = timeGetTime();
 			}
 
 			//Deltatime
 			currTime = timeGetTime();
 			delta = (currTime - lastTime) * 0.001f;
-
+			
 			if (delta >= 1.f / FPS) {
 				// 플레이어
 				// move
@@ -405,7 +409,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 								EventParameter* ep = new EventParameter;
 								ep->positionX = gameSceneData.playerState[i].positionX;
 								ep->positionY = gameSceneData.playerState[i].positionY;
-								ep->owner = PLAYER;
+								ep->owner = (EventOwnerType)(PLAYER0 + i);
 								spawns.push_back(*ep);
 
 								// 주변 적 폭발 처리
@@ -429,6 +433,8 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 										remainExplosions.push_back(*re);
 
 										mobDatas.erase(mobDatas.begin() + j);
+										mobtarget.erase(mobtarget.begin() + j);
+										mobActiveTimer.erase(mobActiveTimer.begin() + j);
 										j = 0;
 									}
 								}
@@ -528,6 +534,8 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 										}
 									}
 									mobDatas.erase(mobDatas.begin() + j);
+									mobtarget.erase(mobtarget.begin() + j);
+									mobActiveTimer.erase(mobActiveTimer.begin() + j);
 									break;
 								}
 							}
@@ -537,7 +545,6 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						y = bulletDatas[i].positionY / BLOCK_SIZE_Y;
 						if (gameSceneData.mapData.blockState[(int)y][(int)x]) {
 							gameSceneData.mapData.blockState[(int)y][(int)x] = false;
-							//bulletDatas.erase(bulletDatas.begin() + i); // 블럭 관통
 						}
 
 						// 총알 이동
@@ -600,32 +607,37 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				//	몹
 				for (size_t i = 0; i < mobDatas.size(); i++)
 				{
+					minDistance = -1;
 					for (size_t j = 0; j < MAX_PLAYER_LENGTH; j++)
 					{
-						x = Distance(mobDatas[i].positionX, gameSceneData.playerState[j].positionX,
-							mobDatas[i].positionY, gameSceneData.playerState[j].positionY);
-						// 각 플레이어 까지의 거리 계산
-						if (minDistance != -1 || x < minDistance) {
-							minDistance = x;
-							mobtarget[i] = j;
-						}
+						if (!gameSceneData.playerState[j].isDead) {
+							x = Distance(mobDatas[i].positionX, gameSceneData.playerState[j].positionX,
+								mobDatas[i].positionY, gameSceneData.playerState[j].positionY);
+							// 각 플레이어 까지의 거리 계산
+							if (minDistance == -1 || x < minDistance) {
+								minDistance = x;
+								mobtarget[i] = j;
+							}
 
-						if (!gameSceneData.playerState[j].isDead &&
-							Collision(mobDatas[i].positionX, gameSceneData.playerState[j].positionX,
-								mobDatas[i].positionY, gameSceneData.playerState[j].positionY, PLAYER_SIZE, PLAYER_SIZE)) {
-							gameSceneData.leftLifeCount--;
 
-							EventParameter* ep = new EventParameter;
-							ep->positionX = gameSceneData.playerState[j].positionX;
-							ep->positionY = gameSceneData.playerState[j].positionY;
-							ep->owner = PLAYER;
-							explosions.push_back(*ep);
 
-							RemainExplosion* re = new RemainExplosion;
-							re->explosioninfo = *ep;
-							remainExplosions.push_back(*re);
+							if (Collision(mobDatas[i].positionX, gameSceneData.playerState[j].positionX,
+									mobDatas[i].positionY, gameSceneData.playerState[j].positionY, PLAYER_SIZE, PLAYER_SIZE)) {
+								gameSceneData.leftLifeCount--;
 
-							gameSceneData.playerState[j].isDead = true;
+								EventParameter* ep = new EventParameter;
+								ep->positionX = gameSceneData.playerState[j].positionX;
+								ep->positionY = gameSceneData.playerState[j].positionY;
+
+								ep->owner = (EventOwnerType)(PLAYER0 + j);
+								explosions.push_back(*ep);
+
+								RemainExplosion* re = new RemainExplosion;
+								re->explosioninfo = *ep;
+								remainExplosions.push_back(*re);
+
+								gameSceneData.playerState[j].isDead = true;
+							}
 						}
 					}
 
@@ -636,10 +648,19 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						y = mobDatas[i].positionY;
 						moveVal = (PLAYER_MOVE_SPEED_PER_SECOND / 2) * delta;
 
-						if (x > moveVal) {
-							x -= moveVal;
-							mobDatas[i].positionX = x;
-						}
+						tx = x - gameSceneData.playerState[mobtarget[i]].positionX;
+						ty = y - gameSceneData.playerState[mobtarget[i]].positionY;
+
+						val = sqrt(pow(tx, 2) + pow(ty, 2));
+
+						tx = tx / val;
+						ty = ty / val;
+
+						x -= tx * moveVal;
+						y -= ty * moveVal;
+
+						mobDatas[i].positionX = x;
+						mobDatas[i].positionY = y;
 
 						// 몹 위치 블럭 막기
 						x = mobDatas[i].positionX / BLOCK_SIZE_X;
@@ -647,9 +668,8 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						gameSceneData.mapData.blockState[(int)y][(int)x] = true;
 					}
 				}
-
-				// 폭발 시 주변 적도 연쇄폭발
-
+				
+				// 연쇄폭발
 				if (!remainExplosions.empty()) {
 					for (size_t i = 0; i < remainExplosions.size(); i++)
 					{
@@ -679,8 +699,24 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 									re->explosioninfo = *ep;
 									remainExplosions.push_back(*re);
 
+									x = mobDatas[j].positionX;
+									y = mobDatas[j].positionY;
+									for (int h = -1; h < 2; h++)
+									{
+										for (int v = -1; v < 2; v++)
+										{
+											if ((int)(y / BLOCK_SIZE_Y) + h >= 0 && (int)(y / BLOCK_SIZE_Y) + h < MAP_SIZE_Y &&
+												(int)(x / BLOCK_SIZE_X) + v >= 0 && (int)(x / BLOCK_SIZE_X) + v < MAP_SIZE_X)
+												gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y) + h][(int)(x / BLOCK_SIZE_X) + v] = false;
+										}
+									}
+
 									mobDatas.erase(mobDatas.begin() + j);
+									mobtarget.erase(mobtarget.begin() + j);
+									mobActiveTimer.erase(mobActiveTimer.begin() + j);
 									j = 0;
+
+
 								}
 							}
 						}
@@ -692,7 +728,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				lastTime = currTime;
 				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 				{
-					isSend[i] = true; // 업데이트 후 메시지 전송
+					if (!gameSceneData.playerState[i].isDead) {
+						isSend[i] = true; // 업데이트 후 메시지 전송
+					}
 				}
 
 			}
@@ -768,7 +806,7 @@ int main(int argc, char* argv[]) {
 		success = false;
 		for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 		{
-			if (!isConnect[i]) {
+			if (!isConnect[i] && !isPlay) {
 				threadnum = i;
 				isConnect[i] = true;
 				waitRoomData.playerWaitStates[i] = WAIT_CONNECTED_NORMAL;

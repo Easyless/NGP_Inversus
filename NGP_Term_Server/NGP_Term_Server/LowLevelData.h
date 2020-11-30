@@ -103,11 +103,13 @@ struct MobData // 몹 정보를 나타내는 구조체
 
 enum EventOwnerType : unsigned char
 {
-	PLAYER,
+	PLAYER0,
+	PLAYER1,
+	PLAYER2,
+	PLAYER3,
 	NormalMob,
 	SpecialMob
 };
-
 struct EventParameter // 이벤트(폭발) 정보를 나타내는 구조체
 {
 	short positionX;
@@ -147,6 +149,8 @@ inline UINT GetMessageParameterSize(NetGameMessageType type)
 	case MSG_BULLET_DATA: return sizeof(BulletData);
 	case MSG_MOB_DATA: return sizeof(MobData);
 	case MSG_PLAYER_INPUT: return sizeof(PlayerInput);
+	case MSG_EVENT_EXPLOSION: return sizeof(EventParameter);
+	case MSG_EVENT_SPAWN: return sizeof(EventParameter);
 	}
 }
 
@@ -168,6 +172,8 @@ inline const char* GetMessageString(NetGameMessageType type)
 	case MSG_BULLET_DATA: return TOSTRING(MSG_BULLET_DATA);
 	case MSG_MOB_DATA: return TOSTRING(MSG_MOB_DATA);
 	case MSG_PLAYER_INPUT: return TOSTRING(MSG_PLAYER_INPUT);
+	case MSG_EVENT_EXPLOSION: return TOSTRING(MSG_EVENT_EXPLOSION);
+	case MSG_EVENT_SPAWN: return TOSTRING(MSG_EVENT_SPAWN);
 	default:
 		return "MSG_ERROR_NOT_DEFINED";
 	}
@@ -188,6 +194,8 @@ inline UINT GetMessageParameterCount(NetGameMessageType type, UINT parameterSize
 	case MSG_BULLET_DATA: return parameterSize / sizeof(BulletData);
 	case MSG_MOB_DATA: return parameterSize / sizeof(MobData);
 	case MSG_PLAYER_INPUT: return parameterSize / sizeof(PlayerInput);
+	case MSG_EVENT_EXPLOSION: return parameterSize / sizeof(EventParameter);
+	case MSG_EVENT_SPAWN: return parameterSize / sizeof(EventParameter);
 	}
 }
 
