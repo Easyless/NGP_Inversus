@@ -24,6 +24,11 @@ void InversusContainer::Start()
 //	bullets.emplace_back(position, moveVec);
 //}
 
+void InversusContainer::AddSpawnEffect( Vec2DF position, COLORREF color )
+{
+	this->spawnEffect.emplace_back( position, color );
+}
+
 void InversusContainer::AddExplosion(Vec2DF position, COLORREF color, bool isCollision)
 {
 	this->explosionEffect.emplace_back( position, color );
@@ -62,29 +67,29 @@ void InversusContainer::RefreshMapFromData( const GameSceneData& data )
 
 void InversusContainer::CollectGarbage()
 {
-	//for ( auto i = this->bullets.begin(); i != this->bullets.end(); )
-	//{
-	//	if ( i->IsDestroy() )
-	//	{
-	//		i = this->bullets.erase( i );
-	//	}
-	//	else 
-	//	{
-	//		++i;
-	//	}
-	//}
+	for ( auto i = this->spawnEffect.begin(); i != this->spawnEffect.end(); )
+	{
+		if ( i->IsDestroy() )
+		{
+			i = this->spawnEffect.erase( i );
+		}
+		else
+		{
+			++i;
+		}
+	}
 
-	//for ( auto i = this->explosionEffect.begin(); i != this->explosionEffect.end(); )
-	//{
-	//	if ( i->IsDestroy() )
-	//	{
-	//		i = this->explosionEffect.erase( i );
-	//	}
-	//	else
-	//	{
-	//		++i;
-	//	}
-	//}
+	for ( auto i = this->explosionEffect.begin(); i != this->explosionEffect.end(); )
+	{
+		if ( i->IsDestroy() )
+		{
+			i = this->explosionEffect.erase( i );
+		}
+		else
+		{
+			++i;
+		}
+	}
 }
 
 Vec2DF InversusContainer::GetGameDisplaySize() const

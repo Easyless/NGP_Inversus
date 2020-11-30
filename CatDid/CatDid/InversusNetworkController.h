@@ -33,7 +33,7 @@ struct InversusNetworkController
 	void RefreshMapData();
 	void RefreshMobData();
 	void UpdateExplosionData();
-	//void UpdateSpawnData();
+	void UpdateSpawnData();
 	void GetPlayerInput();
 	void SendPlayerInput();
 };

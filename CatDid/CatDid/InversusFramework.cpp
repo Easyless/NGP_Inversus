@@ -42,6 +42,7 @@ void InversusFramework::Create()
 void InversusFramework::Update( float deltaTime )
 {
 	this->controller->Update( deltaTime );
+	for ( auto& effect : container->spawnEffect ) { effect.Update( deltaTime ); }
 	for ( auto& effect : container->explosionEffect ) { effect.Update( deltaTime ); }
 	for ( auto& bullet : container->bullets ) { bullet.Update( deltaTime ); }
 	container->BlockMap.Update( deltaTime );
@@ -58,6 +59,7 @@ void InversusFramework::Draw( PaintInfo info )
 	for ( auto& enemy : container->enemys ) { enemy.Draw( info ); }
 	for ( auto& p : container->player ) { p.Draw( info ); }
 	for ( auto& effect : container->explosionEffect ) { effect.Draw( info ); }
+	for ( auto& effect : container->spawnEffect ) { effect.Draw( info ); }
 }
 
 void InversusFramework::UIDraw( PaintInfo info )

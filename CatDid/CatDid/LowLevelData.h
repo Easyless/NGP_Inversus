@@ -103,11 +103,13 @@ struct MobData // 몹 정보를 나타내는 구조체
 
 enum EventOwnerType : unsigned char
 {
-	PLAYER,
+	PLAYER0,
+	PLAYER1,
+	PLAYER2,
+	PLAYER3,
 	NormalMob,
 	SpecialMob
 };
-
 struct EventParameter // 이벤트(폭발) 정보를 나타내는 구조체
 {
 	short positionX;

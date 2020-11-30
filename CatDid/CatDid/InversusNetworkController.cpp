@@ -63,6 +63,7 @@ void InversusNetworkController::Update( float deltaTime )
 		this->RefreshMobData();
 		this->RefreshMapData();
 		this->UpdateExplosionData();
+		this->UpdateSpawnData();
 		this->GetPlayerInput();
 		this->SendPlayerInput();
 	}
@@ -124,12 +125,36 @@ void InversusNetworkController::UpdateExplosionData()
 {
 	for ( auto& e : this->explosionDatas )
 	{
-		this->framework->container->AddExplosion( 
+		this->framework->container->AddExplosion(
 			Vec2DF( e.positionX, e.positionY ),
 			RGB( 0, 0, 0 ),
 			false );
 	}
 	this->explosionDatas.clear();
+}
+
+inline COLORREF GetColor( EventOwnerType owner )
+{
+	switch ( owner )
+	{
+	case PLAYER0: return RGB( 169, 14, 21 );
+	case PLAYER1: return RGB( 0, 183, 0 );
+	case PLAYER2: return RGB( 0, 75, 151 );
+	case PLAYER3: return RGB( 0, 0, 0 );
+	case NormalMob: return RGB( 56, 182, 214 );
+	case SpecialMob: return RGB( 214, 56, 56 );
+	}
+}
+
+void InversusNetworkController::UpdateSpawnData()
+{
+	for ( auto& e : this->spawnDatas )
+	{
+		this->framework->container->AddSpawnEffect(
+			Vec2DF( e.positionX, e.positionY ),
+			GetColor(e.owner) );
+	}
+	this->spawnDatas.clear();
 }
 
 void InversusNetworkController::GetPlayerInput()

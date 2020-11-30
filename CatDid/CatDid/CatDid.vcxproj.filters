@@ -120,6 +120,9 @@
     <ClInclude Include="ClientSocketManager.h">
       <Filter>헤더 파일\Network</Filter>
     </ClInclude>
+    <ClInclude Include="SpawnEffect.h">
+      <Filter>헤더 파일\Inversus\Object</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -180,6 +183,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="NetworkDummyObject.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SpawnEffect.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
