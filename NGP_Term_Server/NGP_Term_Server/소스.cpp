@@ -39,10 +39,11 @@ float chargingTime[MAX_PLAYER_LENGTH] = { 0, };
 SOCKET connectedSocket[MAX_PLAYER_LENGTH] = { NULL, NULL, NULL, NULL };
 WaitRoomData waitRoomData;
 GameSceneData gameSceneData;
+std::vector<EventParameter> explosions;
+std::vector<EventParameter> spawns;
 std::vector<BulletData> bulletDatas;
 std::vector<MobData> mobDatas;
 PlayerInput playerInput[MAX_PLAYER_LENGTH];
-EventParameter eventParameter;
 int connectedCount = 0;
 
 void InitSceneData() {
@@ -113,14 +114,6 @@ void SendtoAll(NetGameMessage sendmessage) {
 			case MSG_WAIT_ROOM_DATA:
 				send(connectedSocket[i], (char*)&waitRoomData, sizeof(WaitRoomData), 0);
 				std::cout << "send MSG_WAIT_ROOM_DATA" << std::endl;
-				break;
-			case MSG_EVENT_EXPLOSION:
-				send(connectedSocket[i], (char*)&eventParameter, sizeof(EventParameter), 0);
-				std::cout << "send MSG_EVENT_EXPLOSION" << std::endl;
-				break;
-			case MSG_EVENT_SPAWN:
-				send(connectedSocket[i], (char*)&eventParameter, sizeof(EventParameter), 0);
-				std::cout << "send MSG_EVENT_SPAWN" << std::endl;
 				break;
 			default:
 				break;
@@ -194,15 +187,35 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			case MSG_SCENE_DATA:
 				retval = send(client_sock, (char*)&gameSceneData, sizeof(GameSceneData), 0);
 				//std::cout << "send scene data" << std::endl;
+
 				EnterCriticalSection(&cs);
+
 				sendmessage.type = MSG_BULLET_DATA;
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * bulletDatas.size();
 				retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
 				retval = send(client_sock, (char*)bulletDatas.data(), sizeof(BulletData) * bulletDatas.size(), 0);
+
 				sendmessage.type = MSG_MOB_DATA;
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * mobDatas.size();
 				retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
 				retval = send(client_sock, (char*)mobDatas.data(), sizeof(MobData) * mobDatas.size(), 0);
+
+				if (!explosions.empty()) {
+					sendmessage.type = MSG_EVENT_EXPLOSION;
+					sendmessage.parameterSize = sizeof(EventParameter) * explosions.size();
+					retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
+					retval = send(client_sock, (char*)explosions.data(), sizeof(EventParameter) * explosions.size(), 0);
+					explosions.clear();
+				}
+
+				if (!spawns.empty()) {
+					sendmessage.type = MSG_EVENT_SPAWN;
+					sendmessage.parameterSize = sizeof(EventParameter) * spawns.size();
+					retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
+					retval = send(client_sock, (char*)spawns.data(), sizeof(EventParameter) * spawns.size(), 0);
+					spawns.clear();
+				}
+
 				LeaveCriticalSection(&cs);
 				//SendtoAll(sendmessage);
 				break;
@@ -346,7 +359,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 	float addBulletTimer[MAX_PLAYER_LENGTH] = { 0, };
 	float mobTimer = 0;
 	std::vector<float> mobActiveTimer;
-	float playerActiveTimer[4];
+	float playerActiveTimer[4] = {0,};
 	std::vector<int> mobtarget;
 
 	float moveVal = 0;
@@ -382,25 +395,30 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						if (gameSceneData.playerState[i].isDead) {
 							playerActiveTimer[i] += delta;
 							if (playerActiveTimer[i] > 3) {
+
+								EventParameter* ep = new EventParameter;
+								ep->positionX = gameSceneData.playerState[i].positionX;
+								ep->positionY = gameSceneData.playerState[i].positionY;
+								ep->owner = PLAYER;
+								spawns.push_back(*ep);
+
 								// 林函 利 气惯 贸府
 								for (size_t j = 0; j < mobDatas.size(); j++)
 								{
 									if (Collision(mobDatas[j].positionX, gameSceneData.playerState[i].positionX,
 										mobDatas[j].positionY, gameSceneData.playerState[i].positionY,
 										PLAYER_SIZE, PLAYER_SIZE * EXPLOSION_SIZE)) {
-										mobDatas.erase(mobDatas.begin() + j);
-
-										eventParameter.positionX = mobDatas[j].positionX;
-										eventParameter.positionY = mobDatas[j].positionY;
+										
+										EventParameter* ep = new EventParameter;
+										ep->positionX = mobDatas[j].positionX;
+										ep->positionY = mobDatas[j].positionY;
 										if (mobDatas[j].isSpecialMob)
-											eventParameter.owner = SpecialMob;
+											ep->owner = SpecialMob;
 										else
-											eventParameter.owner = NormalMob;
-										NetGameMessage message;
-										message.type = MSG_EVENT_EXPLOSION;
-										message.parameterSize = sizeof(EventParameter);
-										SendtoAll(message);
-										j = j - 1;
+											ep->owner = NormalMob;
+										explosions.push_back(*ep);
+										mobDatas.erase(mobDatas.begin() + j);
+										j = 0;
 									}
 								}
 								x = gameSceneData.playerState[i].positionX;
@@ -415,7 +433,6 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 										gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y) + h][(int)(x / BLOCK_SIZE_X) + v] = false;
 									}
 								}
-								
 								gameSceneData.playerState[i].isDead = false;
 								playerActiveTimer[i] = 0;
 							}
@@ -474,20 +491,17 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 							if (mobActiveTimer[j] > 1) {
 								if (Collision(mobDatas[j].positionX, bulletDatas[i].positionX,
 									mobDatas[j].positionY, bulletDatas[i].positionY, BULLET_SIZE, PLAYER_SIZE)) {
-									mobDatas.erase(mobDatas.begin() + j);
-
-									eventParameter.positionX = mobDatas[j].positionX;
-									eventParameter.positionY = mobDatas[j].positionY;
+									
+									EventParameter* ep = new EventParameter;
+									ep->positionX = mobDatas[j].positionX;
+									ep->positionY = mobDatas[j].positionY;
 									if (mobDatas[j].isSpecialMob)
-										eventParameter.owner = SpecialMob;
+										ep->owner = SpecialMob;
 									else
-										eventParameter.owner = NormalMob;
-									NetGameMessage message;
-									message.type = MSG_EVENT_EXPLOSION;
-									message.parameterSize = sizeof(EventParameter);
-									SendtoAll(message);
+										ep->owner = NormalMob;
+									explosions.push_back(*ep);
 									// 气惯 困摹 历厘 棺 皋矫瘤 傈价
-
+									
 									x = mobDatas[j].positionX;
 									y = mobDatas[j].positionY;
 									for (int h = -1; h < 2; h++)
@@ -499,7 +513,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 												gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y) + h][(int)(x / BLOCK_SIZE_X) + v] = false;
 										}
 									}
-
+									mobDatas.erase(mobDatas.begin() + j);
 									break;
 								}
 							}
@@ -559,16 +573,14 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 					mobActiveTimer.push_back(0);
 					mobtarget.push_back(0);
 
-					eventParameter.positionX = m->positionX;
-					eventParameter.positionY = m->positionY;
+					EventParameter* ep = new EventParameter;
+					ep->positionX =	m->positionX;
+					ep->positionY =	m->positionY;
 					if (m->isSpecialMob)
-						eventParameter.owner = SpecialMob;
+						ep->owner = SpecialMob;
 					else
-						eventParameter.owner = NormalMob;
-					NetGameMessage message;
-					message.type = MSG_EVENT_SPAWN;
-					message.parameterSize = sizeof(EventParameter);
-					SendtoAll(message);
+						ep->owner = NormalMob;
+					spawns.push_back(*ep);
 				}
 
 				//	各
@@ -588,13 +600,13 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 							Collision(mobDatas[i].positionX, gameSceneData.playerState[j].positionX,
 								mobDatas[i].positionY, gameSceneData.playerState[j].positionY, PLAYER_SIZE, PLAYER_SIZE)) {
 							gameSceneData.leftLifeCount--;
-							eventParameter.positionX = gameSceneData.playerState[j].positionX;
-							eventParameter.positionY = gameSceneData.playerState[j].positionY;
-							eventParameter.owner = PLAYER;
-							NetGameMessage message;
-							message.type = MSG_EVENT_EXPLOSION;
-							message.parameterSize = sizeof(EventParameter);
-							SendtoAll(message);
+
+							EventParameter* ep = new EventParameter;
+							ep->positionX = gameSceneData.playerState[j].positionX;
+							ep->positionY = gameSceneData.playerState[j].positionY;
+							ep->owner = PLAYER;
+							explosions.push_back(*ep);
+
 							gameSceneData.playerState[j].isDead = true;
 						}
 					}
@@ -617,6 +629,15 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						gameSceneData.mapData.blockState[(int)y][(int)x] = true;
 					}
 				}
+
+				// 气惯 矫 林函 利档 楷尖气惯
+
+		/*		if (!explosions.empty()) {
+					for (size_t i = 0; i < explosions.size(); i++)
+					{
+						if()
+					}
+				}*/
 
 				LeaveCriticalSection(&cs);
 
