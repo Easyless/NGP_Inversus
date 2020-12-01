@@ -21,11 +21,6 @@ struct Param {
 	int threadnum;
 };
 
-struct RemainExplosion {
-	float timer = 0;
-	float px, py;
-};
-
 CRITICAL_SECTION cs;
 
 // 이벤트로 스레드 동기화
@@ -46,7 +41,6 @@ WaitRoomData waitRoomData;
 GameSceneData gameSceneData;
 std::vector<EventParameter> spawns;
 std::vector<EventParameter> explosions;
-std::vector<RemainExplosion> remainExplosions;
 std::vector<BulletData> bulletDatas;
 std::vector<MobData> mobDatas;
 PlayerInput playerInput[MAX_PLAYER_LENGTH];
@@ -240,22 +234,6 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type) * mobDatas.size();
 				retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
 				retval = send(client_sock, (char*)mobDatas.data(), sizeof(MobData) * mobDatas.size(), 0);
-
-				/*if (!explosions.empty()) {
-					sendmessage.type = MSG_EVENT_EXPLOSION;
-					sendmessage.parameterSize = sizeof(EventParameter) * explosions.size();
-					retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
-					retval = send(client_sock, (char*)explosions.data(), sizeof(EventParameter) * explosions.size(), 0);
-					explosions.clear();
-				}
-
-				if (!spawns.empty()) {
-					sendmessage.type = MSG_EVENT_SPAWN;
-					sendmessage.parameterSize = sizeof(EventParameter) * spawns.size();
-					retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
-					retval = send(client_sock, (char*)spawns.data(), sizeof(EventParameter) * spawns.size(), 0);
-					spawns.clear();
-				}*/
 
 				LeaveCriticalSection(&cs);
 				break;
@@ -470,10 +448,6 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 											ep->owner = NormalMob;
 										explosions.push_back(*ep);
 
-										/*RemainExplosion* re = new RemainExplosion;
-										re->px = ep->positionX;
-										re->py = ep->positionX;
-										remainExplosions.push_back(*re);*/
 
 										mobDatas.erase(mobDatas.begin() + j);
 										mobtarget.erase(mobtarget.begin() + j);
