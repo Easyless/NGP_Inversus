@@ -3,6 +3,7 @@
 #include "InversusFramework.h"
 #include "InversusClasses.h"
 #include "InversusMenu.h"
+#include "NetworkDummyObject.h"
 
 void InversusNetworkController::InitlizeWithSocket( ClientSocketManager* socket )
 {
@@ -31,6 +32,7 @@ void InversusNetworkController::InitlizeWithSocket( ClientSocketManager* socket 
 	this->socket->recvGameEndFunction =
 		[this]()
 	{
+		this->startGame = false;
 		this->socket->CloseConnection();
 		this->framework->menu->Active();
 	};
@@ -115,6 +117,7 @@ void InversusNetworkController::RefreshBulletData()
 
 void InversusNetworkController::RefreshMapData()
 {
+	this->framework->container->UILife->RefreshFromData( this->sceneData.leftLifeCount );
 	this->framework->container->RefreshMapFromData( this->sceneData );
 }
 

@@ -118,12 +118,12 @@ void ClientSocketManager::SendCancelReadyMsg()
 
 void ClientSocketManager::SendPlayerInput( const PlayerInput& input )
 {
-	//std::cout << "Send Player Input : "
-	//	<< std::boolalpha << input.isPressedMoveUp << ","
-	//	<< std::boolalpha << input.isPressedMoveDown << ","
-	//	<< std::boolalpha << input.isPressedMoveLeft << ","
-	//	<< std::boolalpha << input.isPressedMoveRight
-	//	<< std::endl;
+	std::cout << "Send Player Input : "
+		<< std::boolalpha << input.isPressedMoveUp << ","
+		<< std::boolalpha << input.isPressedMoveDown << ","
+		<< std::boolalpha << input.isPressedMoveLeft << ","
+		<< std::boolalpha << input.isPressedMoveRight
+		<< std::endl;
 	this->Send( NetGameMessageType::MSG_PLAYER_INPUT, 1, (void*)&input );
 }
 
