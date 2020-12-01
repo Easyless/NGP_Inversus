@@ -471,9 +471,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 											ep->owner = NormalMob;
 										explosions.push_back(*ep);
 
-										/*RemainExplosion* re = new RemainExplosion;
+										RemainExplosion* re = new RemainExplosion;
 										re->explosioninfo = *ep;
-										remainExplosions.push_back(*re);*/
+										remainExplosions.push_back(*re);
 
 										mobDatas.erase(mobDatas.begin() + j);
 										mobtarget.erase(mobtarget.begin() + j);
@@ -561,9 +561,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 										ep->owner = NormalMob;
 									explosions.push_back(*ep);
 									// Æø¹ß À§Ä¡ ÀúÀå ¹× ¸Þ½ÃÁö Àü¼Û
-									/*RemainExplosion* re = new RemainExplosion;
+									RemainExplosion* re = new RemainExplosion;
 									re->explosioninfo = *ep;
-									remainExplosions.push_back(*re);*/
+									remainExplosions.push_back(*re);
 
 									x = mobDatas[j].positionX;
 									y = mobDatas[j].positionY;
@@ -675,9 +675,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 								ep->owner = (EventOwnerType)(PLAYER0 + j);
 								explosions.push_back(*ep);
 
-								/*RemainExplosion* re = new RemainExplosion;
+								RemainExplosion* re = new RemainExplosion;
 								re->explosioninfo = *ep;
-								remainExplosions.push_back(*re);*/
+								remainExplosions.push_back(*re);
 
 								gameSceneData.playerState[j].isDead = true;
 							}
@@ -713,59 +713,60 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 					}
 				}
 
-				// ¿¬¼âÆø¹ß
-				//if (!remainExplosions.empty()) {
-				//	for (size_t i = 0; i < remainExplosions.size(); i++)
-				//	{
-				//		remainExplosions[i].timer += delta;
+				//¿¬¼âÆø¹ß
+				if (!remainExplosions.empty()) {
+					for (size_t i = 0; i < remainExplosions.size(); i++)
+					{
+						remainExplosions[i].timer += delta;
 
-				//		if (remainExplosions[i].timer > 1) {
-				//			remainExplosions.erase(remainExplosions.begin() + i);
-				//		}
-				//		else {
-				//			for (size_t j = 0; j < mobDatas.size(); j++)
-				//			{
-				//				if (Collision(mobDatas[j].positionX, remainExplosions[i].explosioninfo.positionX,
-				//					mobDatas[j].positionY, remainExplosions[i].explosioninfo.positionY,
-				//					PLAYER_SIZE, PLAYER_SIZE * EXPLOSION_SIZE)) {
+						if (remainExplosions[i].timer > 0.5) {
+							remainExplosions.erase(remainExplosions.begin() + i);
+							i = 0;
+						}
+						else {
+							for (size_t j = 0; j < mobDatas.size(); j++)
+							{
+								if (Collision(mobDatas[j].positionX, remainExplosions[i].explosioninfo.positionX,
+									mobDatas[j].positionY, remainExplosions[i].explosioninfo.positionY,
+									PLAYER_SIZE, PLAYER_SIZE * EXPLOSION_SIZE)) {
 
-				//					EventParameter* ep = new EventParameter;
-				//					ep->positionX = mobDatas[j].positionX;
-				//					ep->positionY = mobDatas[j].positionY;
-				//					if (mobDatas[j].isSpecialMob)
-				//						ep->owner = SpecialMob;
-				//					else
-				//						ep->owner = NormalMob;
-				//					explosions.push_back(*ep);
-
-
-				//					/*	RemainExplosion* re = new RemainExplosion;
-				//						re->explosioninfo = *ep;
-				//						remainExplosions.push_back(*re);*/
-
-				//					x = mobDatas[j].positionX;
-				//					y = mobDatas[j].positionY;
-				//					for (int h = -1; h < 2; h++)
-				//					{
-				//						for (int v = -1; v < 2; v++)
-				//						{
-				//							if ((int)(y / BLOCK_SIZE_Y) + h >= 0 && (int)(y / BLOCK_SIZE_Y) + h < MAP_SIZE_Y &&
-				//								(int)(x / BLOCK_SIZE_X) + v >= 0 && (int)(x / BLOCK_SIZE_X) + v < MAP_SIZE_X)
-				//								gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y) + h][(int)(x / BLOCK_SIZE_X) + v] = false;
-				//						}
-				//					}
-
-				//					mobDatas.erase(mobDatas.begin() + j);
-				//					mobtarget.erase(mobtarget.begin() + j);
-				//					mobActiveTimer.erase(mobActiveTimer.begin() + j);
-				//					j = 0;
+									EventParameter* ep = new EventParameter;
+									ep->positionX = mobDatas[j].positionX;
+									ep->positionY = mobDatas[j].positionY;
+									if (mobDatas[j].isSpecialMob)
+										ep->owner = SpecialMob;
+									else
+										ep->owner = NormalMob;
+									explosions.push_back(*ep);
 
 
-				//				}
-				//			}
-				//		}
-				//	}
-				//}
+									RemainExplosion* re = new RemainExplosion;
+									re->explosioninfo = *ep;
+									remainExplosions.push_back(*re);
+
+									x = mobDatas[j].positionX;
+									y = mobDatas[j].positionY;
+									for (int h = -1; h < 2; h++)
+									{
+										for (int v = -1; v < 2; v++)
+										{
+											if ((int)(y / BLOCK_SIZE_Y) + h >= 0 && (int)(y / BLOCK_SIZE_Y) + h < MAP_SIZE_Y &&
+												(int)(x / BLOCK_SIZE_X) + v >= 0 && (int)(x / BLOCK_SIZE_X) + v < MAP_SIZE_X)
+												gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y) + h][(int)(x / BLOCK_SIZE_X) + v] = false;
+										}
+									}
+
+									mobDatas.erase(mobDatas.begin() + j);
+									mobtarget.erase(mobtarget.begin() + j);
+									mobActiveTimer.erase(mobActiveTimer.begin() + j);
+									j = 0;
+
+
+								}
+							}
+						}
+					}
+				}
 				if (!explosions.empty()) {
 					sendmessage.type = MSG_EVENT_EXPLOSION;
 					sendmessage.parameterSize = sizeof(EventParameter) * explosions.size();
