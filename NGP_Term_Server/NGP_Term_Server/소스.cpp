@@ -33,7 +33,7 @@ CRITICAL_SECTION cs;
 
 // 전역 데이터
 // 연결 최대 4개
-bool isConnect[MAX_PLAYER_LENGTH] = { false,};
+bool isConnect[MAX_PLAYER_LENGTH] = { false, };
 bool isPlay = false;
 bool isStart = false;
 bool isSend[MAX_PLAYER_LENGTH] = { false, };
@@ -50,7 +50,7 @@ std::vector<RemainExplosion> remainExplosions;
 std::vector<BulletData> bulletDatas;
 std::vector<MobData> mobDatas;
 PlayerInput playerInput[MAX_PLAYER_LENGTH];
-int connectedCount = 0; 
+int connectedCount = 0;
 
 HANDLE comthreadhandles[4];
 
@@ -150,7 +150,7 @@ void SendtoAll(NetGameMessage sendmessage) {
 			}
 		}
 	}
-	
+
 	switch (sendmessage.type) {
 	case MSG_EVENT_EXPLOSION:
 		explosions.clear();
@@ -161,8 +161,8 @@ void SendtoAll(NetGameMessage sendmessage) {
 	default:
 		break;
 	}
-	
-	
+
+
 	LeaveCriticalSection(&cs);
 }
 
@@ -403,7 +403,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 	float addBulletTimer[MAX_PLAYER_LENGTH] = { 0, };
 	float mobTimer = 0;
 	std::vector<float> mobActiveTimer;
-	float playerActiveTimer[4] = {0,};
+	float playerActiveTimer[4] = { 0, };
 	std::vector<int> mobtarget;
 	float moveVal = 0;
 	while (true) {
@@ -411,7 +411,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 			if (isStart) { // 시작 2초 후부터 업데이트 
 				InitSceneData();
 				Sleep(2000);
-				
+
 				sendmessage.type = MSG_GAME_START;
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
 				SendtoAll(sendmessage);
@@ -428,7 +428,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 			//Deltatime
 			currTime = timeGetTime();
 			delta = (currTime - lastTime) * 0.001f;
-			
+
 			if (gameSceneData.leftLifeCount == 0) {
 				sendmessage.type = MSG_GAME_END;
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
@@ -436,7 +436,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				CloseGameScene();
 				std::cout << "Game End" << std::endl;
 			}
-			
+
 			if (delta >= 1.f / FPS) {
 				// 플레이어
 				// move
@@ -460,11 +460,12 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 									if (Collision(mobDatas[j].positionX, gameSceneData.playerState[i].positionX,
 										mobDatas[j].positionY, gameSceneData.playerState[i].positionY,
 										BLOCK_SIZE_X * EXPLOSION_SIZE, BLOCK_SIZE_X * EXPLOSION_SIZE)) {
-										
+
 										EventParameter* ep = new EventParameter;
 										ep->positionX = mobDatas[j].positionX;
 										ep->positionY = mobDatas[j].positionY;
 										if (mobDatas[j].isSpecialMob)
+
 											ep->owner = SpecialMob;
 										else
 											ep->owner = NormalMob;
@@ -487,9 +488,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 								{
 									for (int v = -2; v < 3; v++)
 									{
-										if((int)(y / BLOCK_SIZE_Y) + h >= 0 && (int)(y / BLOCK_SIZE_Y) + h < MAP_SIZE_Y &&
+										if ((int)(y / BLOCK_SIZE_Y) + h >= 0 && (int)(y / BLOCK_SIZE_Y) + h < MAP_SIZE_Y &&
 											(int)(x / BLOCK_SIZE_X) + v >= 0 && (int)(x / BLOCK_SIZE_X) + v < MAP_SIZE_X)
-										gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y) + h][(int)(x / BLOCK_SIZE_X) + v] = false;
+											gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y) + h][(int)(x / BLOCK_SIZE_X) + v] = false;
 									}
 								}
 								gameSceneData.playerState[i].isDead = false;
@@ -550,7 +551,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 							if (mobActiveTimer[j] > 1) {
 								if (Collision(mobDatas[j].positionX, bulletDatas[i].positionX,
 									mobDatas[j].positionY, bulletDatas[i].positionY, BULLET_SIZE, PLAYER_SIZE)) {
-									
+
 									EventParameter* ep = new EventParameter;
 									ep->positionX = mobDatas[j].positionX;
 									ep->positionY = mobDatas[j].positionY;
@@ -637,8 +638,8 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 					mobtarget.push_back(0);
 
 					EventParameter* ep = new EventParameter;
-					ep->positionX =	m->positionX;
-					ep->positionY =	m->positionY;
+					ep->positionX = m->positionX;
+					ep->positionY = m->positionY;
 					if (m->isSpecialMob)
 						ep->owner = SpecialMob;
 					else
@@ -664,7 +665,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 
 							if (Collision(mobDatas[i].positionX, gameSceneData.playerState[j].positionX,
-									mobDatas[i].positionY, gameSceneData.playerState[j].positionY, PLAYER_SIZE, PLAYER_SIZE)) {
+								mobDatas[i].positionY, gameSceneData.playerState[j].positionY, PLAYER_SIZE, PLAYER_SIZE)) {
 								gameSceneData.leftLifeCount = (int)gameSceneData.leftLifeCount - 1;
 
 								EventParameter* ep = new EventParameter;
@@ -711,60 +712,60 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 							gameSceneData.mapData.blockState[(int)y][(int)x] = true;
 					}
 				}
-				
+
 				// 연쇄폭발
-				if (!remainExplosions.empty()) {
-					for (size_t i = 0; i < remainExplosions.size(); i++)
-					{
-						remainExplosions[i].timer += delta;
+				//if (!remainExplosions.empty()) {
+				//	for (size_t i = 0; i < remainExplosions.size(); i++)
+				//	{
+				//		remainExplosions[i].timer += delta;
 
-						if (remainExplosions[i].timer > 1) {
-							remainExplosions.erase(remainExplosions.begin() + i);
-						}
-						else {
-							for (size_t j = 0; j < mobDatas.size(); j++)
-							{
-								if (Collision(mobDatas[j].positionX, remainExplosions[i].explosioninfo.positionX,
-									mobDatas[j].positionY, remainExplosions[i].explosioninfo.positionY,
-									PLAYER_SIZE, PLAYER_SIZE * EXPLOSION_SIZE)) {
+				//		if (remainExplosions[i].timer > 1) {
+				//			remainExplosions.erase(remainExplosions.begin() + i);
+				//		}
+				//		else {
+				//			for (size_t j = 0; j < mobDatas.size(); j++)
+				//			{
+				//				if (Collision(mobDatas[j].positionX, remainExplosions[i].explosioninfo.positionX,
+				//					mobDatas[j].positionY, remainExplosions[i].explosioninfo.positionY,
+				//					PLAYER_SIZE, PLAYER_SIZE * EXPLOSION_SIZE)) {
 
-									EventParameter* ep = new EventParameter;
-									ep->positionX = mobDatas[j].positionX;
-									ep->positionY = mobDatas[j].positionY;
-									if (mobDatas[j].isSpecialMob)
-										ep->owner = SpecialMob;
-									else
-										ep->owner = NormalMob;
-									explosions.push_back(*ep);
-
-
-									RemainExplosion* re = new RemainExplosion;
-									re->explosioninfo = *ep;
-									remainExplosions.push_back(*re);
-
-									x = mobDatas[j].positionX;
-									y = mobDatas[j].positionY;
-									for (int h = -1; h < 2; h++)
-									{
-										for (int v = -1; v < 2; v++)
-										{
-											if ((int)(y / BLOCK_SIZE_Y) + h >= 0 && (int)(y / BLOCK_SIZE_Y) + h < MAP_SIZE_Y &&
-												(int)(x / BLOCK_SIZE_X) + v >= 0 && (int)(x / BLOCK_SIZE_X) + v < MAP_SIZE_X)
-												gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y) + h][(int)(x / BLOCK_SIZE_X) + v] = false;
-										}
-									}
-
-									mobDatas.erase(mobDatas.begin() + j);
-									mobtarget.erase(mobtarget.begin() + j);
-									mobActiveTimer.erase(mobActiveTimer.begin() + j);
-									j = 0;
+				//					EventParameter* ep = new EventParameter;
+				//					ep->positionX = mobDatas[j].positionX;
+				//					ep->positionY = mobDatas[j].positionY;
+				//					if (mobDatas[j].isSpecialMob)
+				//						ep->owner = SpecialMob;
+				//					else
+				//						ep->owner = NormalMob;
+				//					explosions.push_back(*ep);
 
 
-								}
-							}
-						}
-					}
-				}
+				//					/*	RemainExplosion* re = new RemainExplosion;
+				//						re->explosioninfo = *ep;
+				//						remainExplosions.push_back(*re);*/
+
+				//					x = mobDatas[j].positionX;
+				//					y = mobDatas[j].positionY;
+				//					for (int h = -1; h < 2; h++)
+				//					{
+				//						for (int v = -1; v < 2; v++)
+				//						{
+				//							if ((int)(y / BLOCK_SIZE_Y) + h >= 0 && (int)(y / BLOCK_SIZE_Y) + h < MAP_SIZE_Y &&
+				//								(int)(x / BLOCK_SIZE_X) + v >= 0 && (int)(x / BLOCK_SIZE_X) + v < MAP_SIZE_X)
+				//								gameSceneData.mapData.blockState[(int)(y / BLOCK_SIZE_Y) + h][(int)(x / BLOCK_SIZE_X) + v] = false;
+				//						}
+				//					}
+
+				//					mobDatas.erase(mobDatas.begin() + j);
+				//					mobtarget.erase(mobtarget.begin() + j);
+				//					mobActiveTimer.erase(mobActiveTimer.begin() + j);
+				//					j = 0;
+
+
+				//				}
+				//			}
+				//		}
+				//	}
+				//}
 				if (!explosions.empty()) {
 					sendmessage.type = MSG_EVENT_EXPLOSION;
 					sendmessage.parameterSize = sizeof(EventParameter) * explosions.size();
