@@ -12,7 +12,7 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS // 최신 VC++ 컴파일 시 경고 방지
 
 #define SERVERPORT 15073
-#define FPS 30.f
+#define FPS 60.f
 #define BULLET_SPEED 2.f
 #define PLAYER_SPEED 2.f
 
@@ -72,10 +72,8 @@ void CloseGameScene() {
 		if (isConnect[i]) {
 			isConnect[i] = false;
 			waitRoomData.playerWaitStates[i] = WAIT_NOT_CONNECTED;
-			//CloseHandle(comthreadhandles[i]);
 		}
 	}
-	connectedCount = 0;
 	spawns.clear();
 	explosions.clear();
 	bulletDatas.clear();
@@ -146,7 +144,7 @@ void SendtoAll(NetGameMessage sendmessage) {
 				send(connectedSocket[i], (char*)spawns.data(), sizeof(EventParameter) * spawns.size(), 0);
 				break;
 			default:
-				break;
+				break; 
 			}
 		}
 	}
@@ -260,7 +258,6 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				}*/
 
 				LeaveCriticalSection(&cs);
-				//SendtoAll(sendmessage);
 				break;
 			case MSG_BULLET_DATA:
 				break;
