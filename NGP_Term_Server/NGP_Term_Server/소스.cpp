@@ -33,10 +33,9 @@ CRITICAL_SECTION cs;
 
 // 전역 데이터
 // 연결 최대 4개
-bool isConnect[MAX_PLAYER_LENGTH] = { false, false, false, false };
+bool isConnect[MAX_PLAYER_LENGTH] = { false,};
 bool isPlay = false;
 bool isStart = false;
-
 bool isSend[MAX_PLAYER_LENGTH] = { false, };
 bool isCharging[MAX_PLAYER_LENGTH] = { false, };
 PlayerShootType shootDir[MAX_PLAYER_LENGTH] = { None, };
@@ -51,7 +50,9 @@ std::vector<RemainExplosion> remainExplosions;
 std::vector<BulletData> bulletDatas;
 std::vector<MobData> mobDatas;
 PlayerInput playerInput[MAX_PLAYER_LENGTH];
-int connectedCount = 0;
+int connectedCount = 0; 
+
+HANDLE comthreadhandles[4];
 
 void InitSceneData() {
 	gameSceneData.leftLifeCount = MAX_LIFE_COUNT;
@@ -64,6 +65,22 @@ void InitSceneData() {
 	}
 }
 
+void CloseGameScene() {
+	isPlay = false;
+	for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
+	{
+		if (isConnect[i]) {
+			isConnect[i] = false;
+			waitRoomData.playerWaitStates[i] = WAIT_NOT_CONNECTED;
+			//CloseHandle(comthreadhandles[i]);
+		}
+	}
+	connectedCount = 0;
+	spawns.clear();
+	explosions.clear();
+	bulletDatas.clear();
+	mobDatas.clear();
+}
 // 소켓 함수 오류 출력 후 종료
 void err_quit(const char* msg)
 {
@@ -122,11 +139,30 @@ void SendtoAll(NetGameMessage sendmessage) {
 				send(connectedSocket[i], (char*)&waitRoomData, sizeof(WaitRoomData), 0);
 				std::cout << "send MSG_WAIT_ROOM_DATA" << std::endl;
 				break;
+			case MSG_EVENT_EXPLOSION:
+				send(connectedSocket[i], (char*)explosions.data(), sizeof(EventParameter) * explosions.size(), 0);
+				break;
+			case MSG_EVENT_SPAWN:
+				send(connectedSocket[i], (char*)spawns.data(), sizeof(EventParameter) * spawns.size(), 0);
+				break;
 			default:
 				break;
 			}
 		}
 	}
+	
+	switch (sendmessage.type) {
+	case MSG_EVENT_EXPLOSION:
+		explosions.clear();
+		break;
+	case MSG_EVENT_SPAWN:
+		spawns.clear();
+		break;
+	default:
+		break;
+	}
+	
+	
 	LeaveCriticalSection(&cs);
 }
 
@@ -207,7 +243,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
 				retval = send(client_sock, (char*)mobDatas.data(), sizeof(MobData) * mobDatas.size(), 0);
 
-				if (!explosions.empty()) {
+				/*if (!explosions.empty()) {
 					sendmessage.type = MSG_EVENT_EXPLOSION;
 					sendmessage.parameterSize = sizeof(EventParameter) * explosions.size();
 					retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
@@ -221,7 +257,7 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 					retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
 					retval = send(client_sock, (char*)spawns.data(), sizeof(EventParameter) * spawns.size(), 0);
 					spawns.clear();
-				}
+				}*/
 
 				LeaveCriticalSection(&cs);
 				//SendtoAll(sendmessage);
@@ -345,14 +381,12 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 
 	}
 
-
 	isConnect[threadnum] = false;
 	connectedCount--;
 	waitRoomData.playerWaitStates[threadnum] = WAIT_NOT_CONNECTED;
 	sendmessage.type = MSG_WAIT_ROOM_DATA;
 	sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
 	SendtoAll(sendmessage);
-
 	closesocket(client_sock);
 	std::cout << "end communication thread" << std::endl;
 	return 0;
@@ -399,8 +433,8 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 				sendmessage.type = MSG_GAME_END;
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
 				SendtoAll(sendmessage);
-				isPlay = false;
-				break;
+				CloseGameScene();
+				std::cout << "Game End" << std::endl;
 			}
 			
 			if (delta >= 1.f / FPS) {
@@ -425,7 +459,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 								{
 									if (Collision(mobDatas[j].positionX, gameSceneData.playerState[i].positionX,
 										mobDatas[j].positionY, gameSceneData.playerState[i].positionY,
-										PLAYER_SIZE, PLAYER_SIZE * EXPLOSION_SIZE)) {
+										BLOCK_SIZE_X * EXPLOSION_SIZE, BLOCK_SIZE_X * EXPLOSION_SIZE)) {
 										
 										EventParameter* ep = new EventParameter;
 										ep->positionX = mobDatas[j].positionX;
@@ -436,9 +470,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 											ep->owner = NormalMob;
 										explosions.push_back(*ep);
 
-										RemainExplosion* re = new RemainExplosion;
+										/*RemainExplosion* re = new RemainExplosion;
 										re->explosioninfo = *ep;
-										remainExplosions.push_back(*re);
+										remainExplosions.push_back(*re);*/
 
 										mobDatas.erase(mobDatas.begin() + j);
 										mobtarget.erase(mobtarget.begin() + j);
@@ -449,9 +483,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 								x = gameSceneData.playerState[i].positionX;
 								y = gameSceneData.playerState[i].positionY;
 
-								for (int h = -1; h < 2; h++)
+								for (int h = -2; h < 3; h++)
 								{
-									for (int v = -1; v < 2; v++)
+									for (int v = -2; v < 3; v++)
 									{
 										if((int)(y / BLOCK_SIZE_Y) + h >= 0 && (int)(y / BLOCK_SIZE_Y) + h < MAP_SIZE_Y &&
 											(int)(x / BLOCK_SIZE_X) + v >= 0 && (int)(x / BLOCK_SIZE_X) + v < MAP_SIZE_X)
@@ -526,9 +560,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 										ep->owner = NormalMob;
 									explosions.push_back(*ep);
 									// 폭발 위치 저장 및 메시지 전송
-									RemainExplosion* re = new RemainExplosion;
+									/*RemainExplosion* re = new RemainExplosion;
 									re->explosioninfo = *ep;
-									remainExplosions.push_back(*re);
+									remainExplosions.push_back(*re);*/
 
 									x = mobDatas[j].positionX;
 									y = mobDatas[j].positionY;
@@ -640,9 +674,9 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 								ep->owner = (EventOwnerType)(PLAYER0 + j);
 								explosions.push_back(*ep);
 
-								RemainExplosion* re = new RemainExplosion;
+								/*RemainExplosion* re = new RemainExplosion;
 								re->explosioninfo = *ep;
-								remainExplosions.push_back(*re);
+								remainExplosions.push_back(*re);*/
 
 								gameSceneData.playerState[j].isDead = true;
 							}
@@ -650,7 +684,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 					}
 
 					mobActiveTimer[i] += delta;
-					if (mobActiveTimer[i] > 1) {
+					if (mobActiveTimer[i] > 1 && !gameSceneData.playerState[mobtarget[i]].isDead) {
 						// 이동
 						x = mobDatas[i].positionX;
 						y = mobDatas[i].positionY;
@@ -673,7 +707,8 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						// 몹 위치 블럭 막기
 						x = mobDatas[i].positionX / BLOCK_SIZE_X;
 						y = mobDatas[i].positionY / BLOCK_SIZE_Y;
-						gameSceneData.mapData.blockState[(int)y][(int)x] = true;
+						if (x < BLOCK_COUNT_X && y < BLOCK_COUNT_Y && x >= 0 && y >= 0)
+							gameSceneData.mapData.blockState[(int)y][(int)x] = true;
 					}
 				}
 				
@@ -730,8 +765,16 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						}
 					}
 				}
-
-				LeaveCriticalSection(&cs);
+				if (!explosions.empty()) {
+					sendmessage.type = MSG_EVENT_EXPLOSION;
+					sendmessage.parameterSize = sizeof(EventParameter) * explosions.size();
+					SendtoAll(sendmessage);
+				}
+				if (!spawns.empty()) {
+					sendmessage.type = MSG_EVENT_SPAWN;
+					sendmessage.parameterSize = sizeof(EventParameter) * spawns.size();
+					SendtoAll(sendmessage);
+				}
 
 				lastTime = currTime;
 				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
@@ -740,6 +783,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 						isSend[i] = true; // 업데이트 후 메시지 전송
 					}
 				}
+				LeaveCriticalSection(&cs);
 
 			}
 		}
@@ -834,11 +878,11 @@ int main(int argc, char* argv[]) {
 		if (success && !isPlay) {
 			arg = { client_sock, threadnum };
 			connectedSocket[threadnum] = client_sock;
-			hThread = CreateThread(NULL, 0, CommunicationThreadFunc,
+			comthreadhandles[threadnum] = CreateThread(NULL, 0, CommunicationThreadFunc,
 				(LPVOID)&arg, 0, NULL);
-			if (hThread == NULL) { closesocket(client_sock); }
+			if (comthreadhandles[threadnum] == NULL) { closesocket(client_sock); }
 			else {
-				CloseHandle(hThread);
+				CloseHandle(comthreadhandles[threadnum]);
 			}
 		}
 	}
