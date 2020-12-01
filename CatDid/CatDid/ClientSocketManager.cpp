@@ -55,6 +55,7 @@ void ClientSocketManager::SetConnection( const char* ipaddr )
 	{
 		err_quit( "connect()" );
 	}
+	this->isConnectSocket = true;
 }
 
 void ClientSocketManager::StartRecvThread()
@@ -66,8 +67,17 @@ void ClientSocketManager::StartRecvThread()
 	}
 }
 
+void ClientSocketManager::RestartConnection()
+{
+	std::cout << "Restart Connection" << std::endl;
+	this->CreateSocket();
+	this->SetConnection( this->ipAddress.c_str() );
+	this->StartRecvThread();
+}
+
 void ClientSocketManager::Send( NetGameMessageType type )
 {
+	if ( !this->isConnectSocket ) return;
 	NetGameMessage message;
 	message.type = type;
 	message.parameterSize = GetMessageParameterSize( message.type );
@@ -77,8 +87,11 @@ void ClientSocketManager::Send( NetGameMessageType type )
 	if ( ret == SOCKET_ERROR ) err_display( "send()" );
 }
 
+
+
 void ClientSocketManager::Send( NetGameMessageType type, int count, void* parameter )
 {
+	if ( !this->isConnectSocket ) return;
 	NetGameMessage message;
 	message.type = type;
 	message.parameterSize = GetMessageParameterSize( message.type ) * count;
@@ -361,7 +374,9 @@ void ClientSocketManager::OnRecvEventSpawn()
 
 void ClientSocketManager::CloseConnection()
 {
+	TerminateThread( this->msgThread, 0 );
 	closesocket( this->clientSocket );
+	this->isConnectSocket = false;
 }
 
 void ClientSocketManager::Destroy()

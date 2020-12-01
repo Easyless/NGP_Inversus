@@ -358,12 +358,12 @@ void InversusMenu::Draw(PaintInfo info)
 	}
 	{
 		//HELP
-		if (!HELP)
-		{
-			//792 434
-			SelectObject(info.imageDc, helpBit);
-			BitBlt(info.hdc, this->Position.x + 20, this->Position.y+400, 594, 326, info.imageDc, 0, 0, SRCCOPY);
-		}
+		//if (!HELP)
+		//{
+		//	//792 434
+		//	SelectObject(info.imageDc, helpBit);
+		//	BitBlt(info.hdc, this->Position.x + 20, this->Position.y+400, 594, 326, info.imageDc, 0, 0, SRCCOPY);
+		//}
 	}
 }
 
@@ -402,8 +402,8 @@ void InversusMenu::Update(float deltaTime)
 			if (this->Position.x  >= 0)
 			{
 				this->Position = { 0,0 };
+				ClientSocketManager::GetInstance()->RestartConnection();
 				isReing = false;
-				//this->framework->controller->Reset(Difficulty::Normal);
 			}
 		}
 	}

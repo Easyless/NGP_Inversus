@@ -35,5 +35,5 @@ struct InversusNetworkController
 	void UpdateExplosionData();
 	void UpdateSpawnData();
 	void GetPlayerInput();
-	void SendPlayerInput();
+	void SendPlayerInput(float deltaTime);
 };

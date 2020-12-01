@@ -100,6 +100,8 @@ class ClientSocketManager
 
 	NetworkVariables variables;
 
+	bool isConnectSocket = false;
+
 	ClientSocketManager() = default;
 public:
 	static ClientSocketManager* GetInstance();
@@ -108,6 +110,8 @@ public:
 	void CreateSocket();
 	void SetConnection( const char* ipaddr );
 	void StartRecvThread(); 
+
+	void RestartConnection();
 
 	void Send( NetGameMessageType type);
 	void Send( NetGameMessageType type, int count, void* parameter );

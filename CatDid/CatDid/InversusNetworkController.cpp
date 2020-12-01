@@ -2,6 +2,7 @@
 #include "InversusNetworkController.h"
 #include "InversusFramework.h"
 #include "InversusClasses.h"
+#include "InversusMenu.h"
 
 void InversusNetworkController::InitlizeWithSocket( ClientSocketManager* socket )
 {
@@ -28,9 +29,10 @@ void InversusNetworkController::InitlizeWithSocket( ClientSocketManager* socket 
 		this->bulletData = datas;
 	};
 	this->socket->recvGameEndFunction =
-		[]()
+		[this]()
 	{
-
+		this->socket->CloseConnection();
+		this->framework->menu->Active();
 	};
 	this->socket->recvEventExplosionFunction =
 		[this]( const EventDatas& datas )
@@ -65,7 +67,7 @@ void InversusNetworkController::Update( float deltaTime )
 		this->UpdateExplosionData();
 		this->UpdateSpawnData();
 		this->GetPlayerInput();
-		this->SendPlayerInput();
+		this->SendPlayerInput(deltaTime);
 	}
 }
 
@@ -196,7 +198,13 @@ void InversusNetworkController::GetPlayerInput()
 
 }
 
-void InversusNetworkController::SendPlayerInput()
+void InversusNetworkController::SendPlayerInput( float deltaTime )
 {
-	this->socket->SendPlayerInput( input );
+	static float count = 0;
+	count += deltaTime;
+	if ( count >= 0.01666f )
+	{
+		count = 0;
+		this->socket->SendPlayerInput( input );
+	}
 }
