@@ -19,6 +19,8 @@ struct InversusContainer
 	std::list<Explosion> explosionEffect;
 	std::list<SpawnEffect> spawnEffect;
 	std::list<std::unique_ptr<RefreshObject<int>>> UIObject;
+	RefreshObject<int>* UILife = nullptr;
+	RefreshObject<int>* UIScore = nullptr;
 	void Start();
 	//void AddBullet(Vec2DF position, Vec2DF moveVec, bool isSpecial = false);
 	void AddSpawnEffect( Vec2DF position, COLORREF color);

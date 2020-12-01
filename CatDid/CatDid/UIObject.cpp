@@ -11,12 +11,13 @@ static constexpr float MarginX = 10;
 static constexpr float MarginY = 10;
 UILifeObject::UILifeObject()
 {
-	this->transform.Position = Vec2DF{ 820,70 } -Vec2DF{ MarginX,MarginY };
+	this->transform.Position = Vec2DF{ 820,470 } -Vec2DF{ MarginX,MarginY };
 	this->transform.Size = { 50,50 };
 }
 
 void UILifeObject::RefreshFromData( const int& data )
 {
+	this->lifeCount = data;
 }
 
 void UILifeObject::Update(float deltaTime)
@@ -32,13 +33,13 @@ void UILifeObject::Draw(PaintInfo info)
 	auto oldPen = (HBRUSH)SelectObject(info.hdc, GetStockObject(WHITE_BRUSH));
 	auto oldbr = (HBRUSH)SelectObject(info.hdc, GetStockObject(WHITE_BRUSH));
 	auto oldFont = (HFONT)SelectObject(info.hdc, font);
-	//for (size_t i = 0; i < this->framework->controller->life; i++)
-	//{
-	//	auto rt = RectF(this->transform.Position + Vec2DF{ (this->transform.Size.x + 10) * i ,0 }, this->transform.Size.x, this->transform.Size.y);
-	//	RoundRect(info.hdc, rt.left, rt.top, rt.right, rt.bottom, 10, 10);
-	//	RECT rtp = rt;
-	//	DrawText(info.hdc, comment.data(), comment.length(), &rtp, DT_CENTER | DT_VCENTER | DT_NOCLIP | DT_SINGLELINE);
-	//}
+	for (size_t i = 0; i < this->lifeCount; i++)
+	{
+		auto rt = RectF(this->transform.Position + Vec2DF{ (this->transform.Size.x + 10) * i ,0 }, this->transform.Size.x, this->transform.Size.y);
+		RoundRect(info.hdc, rt.left, rt.top, rt.right, rt.bottom, 10, 10);
+		RECT rtp = rt;
+		DrawText(info.hdc, comment.data(), comment.length(), &rtp, DT_CENTER | DT_VCENTER | DT_NOCLIP | DT_SINGLELINE);
+	}
 	SelectObject(info.hdc, oldFont);
 	SelectObject(info.hdc, oldPen);
 	SelectObject(info.hdc, oldbr);
@@ -65,25 +66,25 @@ void UIScoreObject::Draw(PaintInfo info)
 	const std::wstring ScoreComment = L"Score";
 	std::wstringstream ScoreWss;
 
-	HFONT font = CreateFont(20, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, 0, L"±Ã¼­");
-	auto oldbr = (HBRUSH)SelectObject(info.hdc, GetStockObject(WHITE_BRUSH));
-	auto oldPen = (HBRUSH)SelectObject(info.hdc, GetStockObject(WHITE_PEN));
-	auto oldFont = (HFONT)SelectObject(info.hdc, font);
+	//HFONT font = CreateFont(20, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, 0, L"±Ã¼­");
+	//auto oldbr = (HBRUSH)SelectObject(info.hdc, GetStockObject(WHITE_BRUSH));
+	//auto oldPen = (HBRUSH)SelectObject(info.hdc, GetStockObject(WHITE_PEN));
+	//auto oldFont = (HFONT)SelectObject(info.hdc, font);
 
-	auto rt = RectF(this->transform.Position, this->transform.Size.x, this->transform.Size.y);
-	RoundRect(info.hdc, rt.left, rt.top, rt.right, rt.bottom, 10, 10);
+	//auto rt = RectF(this->transform.Position, this->transform.Size.x, this->transform.Size.y);
+	//RoundRect(info.hdc, rt.left, rt.top, rt.right, rt.bottom, 10, 10);
 
-	ScoreWss.str(L"");
-	//ScoreWss << this->framework->controller->Score;
-	SIZE textSize;
-	GetTextExtentPoint(info.hdc, ScoreWss.str().data(), ScoreWss.str().length(), &textSize);
-	TextOut(info.hdc, this->transform.Position.x - transform.Size.x / 2 + 5, this->transform.Position.y - transform.Size.y / 2 + 15, ScoreComment.data(), ScoreComment.length());
-	TextOut(info.hdc, this->transform.Position.x - transform.Size.x / 2 + 5 + transform.Size.x - textSize.cx - 15, this->transform.Position.y - transform.Size.y / 2 + 15 + textSize.cy + 2, ScoreWss.str().data(), ScoreWss.str().length());
-	SelectObject(info.hdc, oldPen);
-	DeleteObject(font);
-	font = CreateFont(40, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, 0, L"±Ã¼­");
-	oldFont = (HFONT)SelectObject(info.hdc, font);
-	ScoreWss.str(L"");
+	//ScoreWss.str(L"");
+	////ScoreWss << this->framework->controller->Score;
+	//SIZE textSize;
+	//GetTextExtentPoint(info.hdc, ScoreWss.str().data(), ScoreWss.str().length(), &textSize);
+	//TextOut(info.hdc, this->transform.Position.x - transform.Size.x / 2 + 5, this->transform.Position.y - transform.Size.y / 2 + 15, ScoreComment.data(), ScoreComment.length());
+	//TextOut(info.hdc, this->transform.Position.x - transform.Size.x / 2 + 5 + transform.Size.x - textSize.cx - 15, this->transform.Position.y - transform.Size.y / 2 + 15 + textSize.cy + 2, ScoreWss.str().data(), ScoreWss.str().length());
+	//SelectObject(info.hdc, oldPen);
+	//DeleteObject(font);
+	//font = CreateFont(40, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, 0, L"±Ã¼­");
+	//oldFont = (HFONT)SelectObject(info.hdc, font);
+	//ScoreWss.str(L"");
 	//if (this->framework->GetPauseSate())
 	//{
 	//	std::wstring pausestr = L"Press P to Restart";
@@ -122,13 +123,13 @@ void UIScoreObject::Draw(PaintInfo info)
 	//	}
 	//}
 	//else 
-	{
-		ScoreWss << "X0";
-		GetTextExtentPoint(info.hdc, ScoreWss.str().data(), ScoreWss.str().length(), &textSize);
-	}
-	TextOut(info.hdc, this->transform.Position.x - textSize.cx / 2, this->transform.Position.y, ScoreWss.str().data(), ScoreWss.str().length());
-	SelectObject(info.hdc, oldFont);
-	SelectObject(info.hdc, oldbr);
-	SelectObject(info.hdc, oldPen);
-	DeleteObject(font);
+	//{
+	//	ScoreWss << "X0";
+	//	GetTextExtentPoint(info.hdc, ScoreWss.str().data(), ScoreWss.str().length(), &textSize);
+	//}
+	//TextOut(info.hdc, this->transform.Position.x - textSize.cx / 2, this->transform.Position.y, ScoreWss.str().data(), ScoreWss.str().length());
+	//SelectObject(info.hdc, oldFont);
+	//SelectObject(info.hdc, oldbr);
+	//SelectObject(info.hdc, oldPen);
+	//DeleteObject(font);
 }

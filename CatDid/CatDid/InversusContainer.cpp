@@ -15,6 +15,8 @@ InversusContainer::InversusContainer()
 	}
 	this->UIObject.push_back(std::move(std::make_unique<UILifeObject>()));
 	this->UIObject.push_back(std::move(std::make_unique<UIScoreObject>()));
+	this->UILife = UIObject.begin()->get();
+	this->UIScore = (UIObject.begin()++)->get();
 }
 void InversusContainer::Start()
 {

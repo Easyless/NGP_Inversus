@@ -5,6 +5,7 @@
 
 class UILifeObject : public RefreshObject<int>
 {
+	UINT lifeCount = 0;
 public:
 	UILifeObject();
 	virtual void RefreshFromData( const int& data );
