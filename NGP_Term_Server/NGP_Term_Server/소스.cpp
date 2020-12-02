@@ -28,15 +28,17 @@ CRITICAL_SECTION cs;
 
 // 전역 데이터
 // 연결 최대 4개
+SOCKET connectedSocket[MAX_PLAYER_LENGTH] = { NULL, NULL, NULL, NULL };
 bool isConnect[MAX_PLAYER_LENGTH] = { false, };
+int connectedCount = 0;
+
 bool isPlay = false;
 bool isStart = false;
 bool isSend[MAX_PLAYER_LENGTH] = { false, };
+bool isSend_End[MAX_PLAYER_LENGTH] = { false, };
 bool isCharging[MAX_PLAYER_LENGTH] = { false, };
-PlayerShootType shootDir[MAX_PLAYER_LENGTH] = { None, };
-float chargingTime[MAX_PLAYER_LENGTH] = { 0, };
 
-SOCKET connectedSocket[MAX_PLAYER_LENGTH] = { NULL, NULL, NULL, NULL };
+PlayerShootType shootDir[MAX_PLAYER_LENGTH] = { None, };
 WaitRoomData waitRoomData;
 GameSceneData gameSceneData;
 std::vector<EventParameter> spawns;
@@ -44,7 +46,6 @@ std::vector<EventParameter> explosions;
 std::vector<BulletData> bulletDatas;
 std::vector<MobData> mobDatas;
 PlayerInput playerInput[MAX_PLAYER_LENGTH];
-int connectedCount = 0;
 
 HANDLE comthreadhandles[4];
 
@@ -153,8 +154,6 @@ void SendtoAll(NetGameMessage sendmessage) {
 	default:
 		break;
 	}
-
-
 	LeaveCriticalSection(&cs);
 }
 
@@ -199,14 +198,22 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 	int readyCount = 0;
 
 	while (true) {
+
+		if (isSend_End[threadnum]) {
+			sendmessage.type = MSG_GAME_END;
+			sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
+			retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
+			isSend_End[threadnum] = false;
+		}
+
 		if (!isPlay || (isPlay && isSend)) {
 			isSend[threadnum] = false; // 업데이트 대기
 			// 데이터 송신 - 메세지 타입 및 사이즈
+
 			if (isPlay) {
 				sendmessage.type = MSG_SCENE_DATA;
 				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
 			}
-
 			retval = send(client_sock, (char*)&sendmessage, sizeof(NetGameMessage), 0);
 
 			//std::cout << "sendmessage type: " << sendmessage.type << std::endl;
@@ -216,8 +223,6 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 			case MSG_WAIT_ROOM_DATA:
 				retval = send(client_sock, (char*)&waitRoomData, sizeof(WaitRoomData), 0);
 				std::cout << "send room data" << std::endl;
-				break;
-			case MSG_GAME_START:
 				break;
 			case MSG_SCENE_DATA:
 				retval = send(client_sock, (char*)&gameSceneData, sizeof(GameSceneData), 0);
@@ -236,10 +241,6 @@ DWORD WINAPI CommunicationThreadFunc(LPVOID arg) {
 				retval = send(client_sock, (char*)mobDatas.data(), sizeof(MobData) * mobDatas.size(), 0);
 
 				LeaveCriticalSection(&cs);
-				break;
-			case MSG_BULLET_DATA:
-				break;
-			case MSG_MOB_DATA:
 				break;
 			default:
 				break;
@@ -382,23 +383,25 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 	std::vector<int> mobtarget;
 	float moveVal = 0;
 	int mobCounter = 0;
-	float mobFaster = 0;
+	float mobGenFaster = 0;
+
 	while (true) {
 		if (isPlay) {
 			if (isStart) { // 시작 2초 후부터 업데이트 
 				InitSceneData();
 				Sleep(2000);
 
-				sendmessage.type = MSG_GAME_START;
-				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
-				SendtoAll(sendmessage);
-				isStart = false;
 				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
 				{
 					if (isConnect[i]) {
 						gameSceneData.playerState[i].isDead = false;
+						//isSend_Start[i] = true;
 					}
 				}
+				sendmessage.type = MSG_GAME_START;
+				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
+				SendtoAll(sendmessage);
+				isStart = false;
 				lastTime = timeGetTime();
 			}
 
@@ -406,10 +409,14 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 			currTime = timeGetTime();
 			delta = (currTime - lastTime) * 0.001f;
 
-			if (gameSceneData.leftLifeCount == 0) {
-				sendmessage.type = MSG_GAME_END;
-				sendmessage.parameterSize = GetMessageParameterSize(sendmessage.type);
-				SendtoAll(sendmessage);
+			if (gameSceneData.leftLifeCount <= 0) {
+				for (size_t i = 0; i < MAX_PLAYER_LENGTH; i++)
+				{
+					if (isConnect[i]) {
+						gameSceneData.playerState[i].isDead = false;
+						isSend_End[i] = true;
+					}
+				}
 				CloseGameScene();
 				std::cout << "Game End" << std::endl;
 			}
@@ -496,12 +503,6 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 								gameSceneData.playerState[i].positionX = x;
 							}
 
-							if (isCharging[i]) {
-								chargingTime[i] += delta;
-							}
-							else {
-								chargingTime[i] = 0;
-							}
 
 							if (gameSceneData.playerState[i].remainBullet < 6) {
 								addBulletTimer[i] += delta;
@@ -597,10 +598,10 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 				//  몹 생성
 				mobTimer += delta;
-				if (mobTimer > 3.f - mobFaster) { // 몹 리젠시간, 방식 정하기
+				if (mobTimer > 3.f - mobGenFaster) { // 몹 리젠시간, 방식 정하기
 					mobCounter++;
-					if (mobFaster < 2.5)
-						mobFaster += 0.05f;
+					if (mobGenFaster < 2.5)
+						mobGenFaster += 0.05f;
 					mobTimer = 0;
 					MobData* m = new MobData;
 					if (mobCounter % 5 != 0) {
@@ -640,11 +641,10 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 								mobtarget[i] = j;
 							}
 
-
-
 							if (Collision(mobDatas[i].positionX, gameSceneData.playerState[j].positionX,
 								mobDatas[i].positionY, gameSceneData.playerState[j].positionY, PLAYER_SIZE, PLAYER_SIZE)) {
-								gameSceneData.leftLifeCount = (int)gameSceneData.leftLifeCount - 1;
+								if (gameSceneData.leftLifeCount > 0)
+									gameSceneData.leftLifeCount = (int)gameSceneData.leftLifeCount - 1;
 
 								EventParameter* ep = new EventParameter;
 								ep->positionX = gameSceneData.playerState[j].positionX;
@@ -652,7 +652,6 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 
 								ep->owner = (EventOwnerType)(PLAYER0 + j);
 								explosions.push_back(*ep);
-
 
 								gameSceneData.playerState[j].isDead = true;
 							}
@@ -754,7 +753,7 @@ DWORD WINAPI UpdateThreadFunc(LPVOID arg) {
 			}
 		}
 		else {
-			mobFaster = 0;
+			mobGenFaster = 0;
 			mobCounter = 0;
 		}
 
