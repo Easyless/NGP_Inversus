@@ -5,10 +5,8 @@
 DWORD WINAPI ClientMessageThread( void* param )
 {
 	ClientSocketManager* manager = (ClientSocketManager*)param;
-	while ( true )
-	{
-		manager->RecvProc();
-	}
+	while ( manager->RecvProc() );
+	return 0;
 }
 
 ClientSocketManager* ClientSocketManager::GetInstance()
@@ -127,7 +125,7 @@ void ClientSocketManager::SendPlayerInput( const PlayerInput& input )
 	this->Send( NetGameMessageType::MSG_PLAYER_INPUT, 1, (void*)&input );
 }
 
-void ClientSocketManager::RecvProc()
+int ClientSocketManager::RecvProc()
 {
 	NetGameMessage messages;
 	ZeroMemory( &messages, sizeof( NetGameMessage ) );
@@ -186,6 +184,7 @@ void ClientSocketManager::RecvProc()
 		this->variables.recvGameEnd.isChange = true;
 		this->variables.recvGameEnd.data = true;
 		this->variables.recvGameEnd.End();
+		return 0;
 	}
 	break;
 	case MSG_SCENE_DATA:
@@ -249,8 +248,7 @@ void ClientSocketManager::RecvProc()
 	}
 	break;
 	}
-
-
+	return 1;
 }
 
 int ClientSocketManager::Recvn( SOCKET socket, char* buf, int len, int flags )
@@ -374,7 +372,8 @@ void ClientSocketManager::OnRecvEventSpawn()
 
 void ClientSocketManager::CloseConnection()
 {
-	TerminateThread( this->msgThread, 0 );
+	//TerminateThread( this->msgThread, 0 );
+	WaitForSingleObject( this->msgThread, INFINITE );
 	closesocket( this->clientSocket );
 	this->isConnectSocket = false;
 }
@@ -383,6 +382,14 @@ void ClientSocketManager::Destroy()
 {
 	this->variables.Delete();
 	WSACleanup();
+}
+
+void ClientSocketManager::TerminateConnection()
+{
+	TerminateThread( this->msgThread, 0 );
+	//WaitForSingleObject( this->msgThread, INFINITE );
+	closesocket( this->clientSocket );
+	this->isConnectSocket = false;
 }
 
 void err_quit( const char* msg )
