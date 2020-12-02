@@ -120,7 +120,7 @@ public:
 	void SendCancelReadyMsg();
 	void SendPlayerInput( const PlayerInput& input );
 
-	void RecvProc();
+	int RecvProc();
 	static int Recvn( SOCKET socket, char* buf, int len, int flags );
 
 	void OnRecvWaitData();
@@ -134,6 +134,7 @@ public:
 	void OnRecvEventSpawn();
 
 	void CloseConnection();
+	void TerminateConnection();
 	void Destroy();
 
 	std::function<void( const WaitRoomData& )> recvWaitDataFunction = nullptr;
