@@ -126,7 +126,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ipszCmdPa
 	}
 #endif // DEBUG
 	std::cout << "Destroy" << std::endl;
-	ClientSocketManager::GetInstance()->CloseConnection();
+	ClientSocketManager::GetInstance()->TerminateConnection();
 	ClientSocketManager::GetInstance()->Destroy();
 	return Message.wParam;
 }
@@ -194,7 +194,7 @@ LRESULT CALLBACK wProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 	case WM_DESTROY:
 	{
 		std::cout << "Destroy" << std::endl;
-		ClientSocketManager::GetInstance()->CloseConnection();
+		ClientSocketManager::GetInstance()->TerminateConnection();
 		ClientSocketManager::GetInstance()->Destroy();
 		PostQuitMessage(0);
 	}
